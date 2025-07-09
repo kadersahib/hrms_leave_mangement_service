@@ -2,18 +2,18 @@ package net.tetradtech.hrms_leave_service.service;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.model.LeaveStatus;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class LeaveApplicationFilterServiceImpl implements LeaveApplicationFilterService {
 
-    private final LeaveApplicationRepository leaveApplicationRepository;
+    @Autowired
+    private  LeaveApplicationRepository leaveApplicationRepository;
 
-    public LeaveApplicationFilterServiceImpl(LeaveApplicationRepository repo) {
-        this.leaveApplicationRepository = repo;
-    }
 
     @Override
     public List<LeaveApplication> filterByStatus(String status) {
@@ -60,4 +60,24 @@ public class LeaveApplicationFilterServiceImpl implements LeaveApplicationFilter
             throw new IllegalArgumentException("Invalid status: Only PENDING, APPROVED, REJECTED are allowed.");
         }
     }
+
+    @Override
+    public List<LeaveApplication> filterByDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
+        if (!leaveApplicationRepository.existsByUserIdAndIsDeletedFalse(userId)) {
+            throw new IllegalArgumentException("No leaves found for user ID: " + userId);
+        }
+
+        List<LeaveApplication> leaves = leaveApplicationRepository
+                .findByUserIdAndStartDateGreaterThanEqualAndEndDateLessThanEqualAndIsDeletedFalse(
+                        userId, startDate, endDate);
+        if (leaves.isEmpty()) {
+            throw new IllegalArgumentException("No leave data found for user ID " + userId +
+                    " between " + startDate + " and " + endDate);
+        }
+
+        return leaves;
+    }
+
+
+
 }

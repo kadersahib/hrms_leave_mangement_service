@@ -5,13 +5,15 @@ import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApplicationFilterService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/leaves")
+@RequestMapping("/api/filter")
 public class LeaveFilterController {
 
     @Autowired
@@ -62,5 +64,24 @@ public class LeaveFilterController {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
         }
     }
+
+    @GetMapping("/user-date")
+    public ResponseEntity<ApiResponse<List<LeaveApplication>>> filterByUserAndDateRange(
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+            List<LeaveApplication> leaves = leaveApplicationFilterService
+                    .filterByDateRange(userId, startDate, endDate);
+
+            return ResponseEntity.ok(new ApiResponse<>("success", "Filtered by user and date", leaves));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>("error", e.getMessage(), null));
+        }
+    }
+
+
+
 }
 
