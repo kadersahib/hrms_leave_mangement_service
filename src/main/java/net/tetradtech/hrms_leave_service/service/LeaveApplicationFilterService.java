@@ -1,0 +1,12 @@
+package net.tetradtech.hrms_leave_service.service;
+
+import net.tetradtech.hrms_leave_service.model.LeaveApplication;
+
+import java.util.List;
+
+public interface LeaveApplicationFilterService {
+    List<LeaveApplication> filterByStatus(String status);
+    List<LeaveApplication> filterByUserId(Long userId);
+    List<LeaveApplication> filterByLeaveType(Long leaveTypeId);
+    List<LeaveApplication> filterByUserIdAndStatus(Long userId, String status);
+}

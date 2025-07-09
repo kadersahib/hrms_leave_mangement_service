@@ -1,0 +1,30 @@
+
+package net.tetradtech.hrms_leave_service.repository;
+
+import net.tetradtech.hrms_leave_service.model.LeaveApplication;
+import net.tetradtech.hrms_leave_service.model.LeaveStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+
+@Repository
+public interface LeaveApplicationRepository extends JpaRepository<LeaveApplication, Long> {
+//    Optional<LeaveApplication> // Return type: may or may not find a result
+//            findTopBy                  // "Top" means get the first record after sorting
+//    UserIdAndIsDeletedFalse    // WHERE user_id = ? AND is_deleted = false
+//    OrderByCreatedAtDesc();    // ORDER BY created_at DESC (most recent first)
+
+    Optional<LeaveApplication> findTopByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
+    List<LeaveApplication> findByUserIdAndIsDeletedFalse(Long userId);
+    List<LeaveApplication> findByIsDeletedFalse();
+
+
+    //status validation
+    List<LeaveApplication> findByStatusAndIsDeletedFalse(LeaveStatus status);
+    List<LeaveApplication> findByLeaveTypeIdAndIsDeletedFalse(Long leaveTypeId);
+    List<LeaveApplication> findByUserIdAndStatusAndIsDeletedFalse(Long userId, LeaveStatus status);
+    boolean existsByUserIdAndIsDeletedFalse(Long userId);
+}
