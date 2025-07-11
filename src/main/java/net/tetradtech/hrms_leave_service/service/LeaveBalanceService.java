@@ -7,6 +7,6 @@ import java.util.List;
 
 @Service
 public interface LeaveBalanceService {
-    List<LeaveBalanceDTO> getBalanceForUser(Long userId);
+    List<LeaveBalanceDTO> getLeaveBalanceByUser(Long userId);
 
 }

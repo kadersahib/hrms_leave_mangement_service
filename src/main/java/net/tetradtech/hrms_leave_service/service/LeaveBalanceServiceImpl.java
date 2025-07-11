@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class LeaveBalanceServiceImpl implements LeaveBalanceService{
@@ -25,30 +26,25 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService{
     private LeaveTypeClient leaveTypeClient;
 
     @Override
-    public List<LeaveBalanceDTO> getBalanceForUser(Long userId) {
-        List<LeaveApplication> approvedLeaves =
-                leaveApplicationRepository.findByUserIdAndStatusAndIsDeletedFalse(userId, LeaveStatus.APPROVED);
+    public List<LeaveBalanceDTO> getLeaveBalanceByUser(Long userId) {
+        List<LeaveTypeDTO> leaveTypes = leaveTypeClient.getAllLeaveTypes(); // Fetch all leave types
 
-        Map<Long, Integer> usedMap = new HashMap<>();
+        return leaveTypes.stream().map(type -> {
+            long usedDays = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId).stream()
+                    .filter(l -> l.getLeaveTypeId().equals(type.getId()))
+                    .filter(l -> l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.PENDING)
+                    .mapToLong(l -> ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1)
+                    .sum();
 
-        for (LeaveApplication leave : approvedLeaves) {
-            long days = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
-            usedMap.merge(leave.getLeaveTypeId(), (int) days, Integer::sum);
-        }
+            long remainingDays = type.getMaxDays() - usedDays;
 
-        List<LeaveBalanceDTO> balances = new ArrayList<>();
-
-        for (Map.Entry<Long, Integer> entry : usedMap.entrySet()) {
-            Long leaveTypeId = entry.getKey();
-            int used = entry.getValue();
-
-            LeaveTypeDTO leaveType = leaveTypeClient.getLeaveTypeById(leaveTypeId);
-            int total = (leaveType != null) ? leaveType.getMaxDays() : 0;
-            int remaining = Math.max(0, total - used);
-
-            balances.add(new LeaveBalanceDTO(userId, leaveTypeId, total, used, remaining));
-        }
-
-        return balances;
+            return new LeaveBalanceDTO(
+                    type.getId(),
+                    type.getName(),
+                    type.getMaxDays(),
+                    usedDays,
+                    remainingDays
+            );
+        }).collect(Collectors.toList());
     }
 }

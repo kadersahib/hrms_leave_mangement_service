@@ -21,6 +21,6 @@ public class LeaveBalanceController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<List<LeaveBalanceDTO>> getBalance(@PathVariable Long userId) {
-        return ResponseEntity.ok(leaveBalanceService.getBalanceForUser(userId));
+        return ResponseEntity.ok(leaveBalanceService.getLeaveBalanceByUser(userId));
     }
 }
