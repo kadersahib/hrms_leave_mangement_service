@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
-public class LeaveApplicationFilterServiceImpl implements LeaveApplicationFilterService {
+public class LeaveApplicationFilterServiceImpl implements LeaveApplicationStatusService {
 
     @Autowired
     private  LeaveApplicationRepository leaveApplicationRepository;

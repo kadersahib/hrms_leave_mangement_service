@@ -3,7 +3,7 @@ package net.tetradtech.hrms_leave_service.controller;
 
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
-import net.tetradtech.hrms_leave_service.service.LeaveApplicationFilterService;
+import net.tetradtech.hrms_leave_service.service.LeaveApplicationStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/filter")
-public class LeaveFilterController {
+public class LeaveServiceController {
 
     @Autowired
-    private  LeaveApplicationFilterService leaveApplicationFilterService;
+    private LeaveApplicationStatusService leaveApplicationFilterService;
 
     // Filter by Status
     @GetMapping("/status/{status}")

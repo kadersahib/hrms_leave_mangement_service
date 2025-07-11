@@ -5,7 +5,7 @@ import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface LeaveApplicationFilterService {
+public interface LeaveApplicationStatusService {
     List<LeaveApplication> filterByStatus(String status);
     List<LeaveApplication> filterByUserId(Long userId);
     List<LeaveApplication> filterByLeaveType(Long leaveTypeId);

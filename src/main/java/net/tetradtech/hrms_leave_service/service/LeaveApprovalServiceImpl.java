@@ -35,7 +35,9 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
         if (leave.isDeleted()) {
             throw new IllegalStateException("Cannot update approval for deleted leave (Leave ID: " + leave.getId() + ")");
         }
-
+        if (leave.getStatus() == LeaveStatus.CANCELLED || dto.getAction().equalsIgnoreCase("CANCELLED")) {
+            throw new IllegalStateException("Approval actions cannot be performed on or set to CANCELLED status.");
+        }
         // Save approval
         LeaveApproval history = LeaveApproval.builder()
                 .leaveId(dto.getLeaveId())
@@ -121,5 +123,6 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
 
         leaveApprovalRepository.save(approval);
     }
+
 
 }

@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Table(
         name = "leave_applications",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "start_date", "end_date"})
@@ -42,12 +41,15 @@ public class LeaveApplication {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+
     @Enumerated(EnumType.STRING)
-    private LeaveStatus status = LeaveStatus.PENDING;
+    @Column(name = "status")
+    private LeaveStatus status;
 
     private String reportingManager;
 
     private int maxDays;
+    private int appliedDays;
 
     private boolean active = true;
 
@@ -61,6 +63,15 @@ public class LeaveApplication {
 
     private LocalDateTime updatedAt;
     private String updatedBy;
+
+    @Column(name = "cancelled_by")
+    private String cancelledBy;
+
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
 
     // Soft delete fields
     private boolean isDeleted;

@@ -2,6 +2,7 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import jakarta.validation.Valid;
+import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
 import net.tetradtech.hrms_leave_service.dto.LeaveUpdateDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.model.LeaveStatus;
@@ -72,15 +73,6 @@ public class LeaveApplicationController {
         return ResponseEntity.ok(new ApiResponse<>("success", "All leaves fetched", leaves));
     }
 
-//    // Get all leaves including soft-deleted
-//    @GetMapping("/all")
-//    public ResponseEntity<ApiResponse<List<LeaveApplication>>> getAllLeavesIncludingDeleted() {
-//        List<LeaveApplication> allLeaves = leaveApplicationService.getAllLeavesIncludingDeleted();
-//        return ResponseEntity.ok(
-//                new ApiResponse<>("success", "All leave applications (including deleted) fetched", allLeaves)
-//        );
-//    }
-
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getByUser(@PathVariable Long userId) {
         List<LeaveApplication> leaves = leaveApplicationService.getLeavesByUserId(userId);
@@ -98,6 +90,16 @@ public class LeaveApplicationController {
             leaveApplicationService.deleteLatestLeaveByUserId(userId);
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave deleted (soft)", null));
         } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/cancel")
+    public ResponseEntity<ApiResponse<LeaveApplication>> cancelLeave(@RequestBody LeaveCancelDTO dto) {
+        try {
+            LeaveApplication cancelled = leaveApplicationService.cancelLeave(dto);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Leave cancelled successfully", cancelled));
+        } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
         }
     }
