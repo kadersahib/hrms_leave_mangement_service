@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/leave-balance")
@@ -19,8 +20,24 @@ public class LeaveBalanceController {
     @Autowired
     private LeaveBalanceService leaveBalanceService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<LeaveBalanceDTO>> getBalance(@PathVariable Long userId) {
-        return ResponseEntity.ok(leaveBalanceService.getLeaveBalanceByUser(userId));
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getUserLeaveBalance(@PathVariable Long userId) {
+        List<LeaveBalanceDTO> balances = leaveBalanceService.getLeaveBalanceByUser(userId);
+
+        return ResponseEntity.ok(Map.of("balance", balances,"userId", userId ));
+
+    }
+
+
+    @GetMapping("/user/{userId}/type/{leaveTypeId}")
+    public ResponseEntity<?> getUserLeaveBalanceByType(
+            @PathVariable Long userId,
+            @PathVariable Long leaveTypeId
+    ) {
+        LeaveBalanceDTO balance = leaveBalanceService.getLeaveBalanceByUserAndType(userId, leaveTypeId);
+        return ResponseEntity.ok(Map.of("balance", balance,"userId", userId ));
+
+
     }
 }

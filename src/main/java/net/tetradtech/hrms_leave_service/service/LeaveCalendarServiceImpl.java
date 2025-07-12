@@ -27,7 +27,10 @@ public class LeaveCalendarServiceImpl implements LeaveCalendarService {
 
     @Override
     public List<LeaveCalendarDTO> getCalendarData() {
-        List<LeaveApplication> leaves = leaveApplicationRepository.findByIsDeletedFalse();
+        List<LeaveApplication> leaves = leaveApplicationRepository.findByIsDeletedFalse()
+                .stream()
+                .filter(leave -> leave.getStatus().name().equalsIgnoreCase("APPROVED"))
+                .toList();
 
         return leaves.stream().map(leave -> {
             UserDTO user = userServiceClient.getUserById(leave.getUserId());

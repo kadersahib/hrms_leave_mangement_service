@@ -8,5 +8,7 @@ import java.util.List;
 @Service
 public interface LeaveBalanceService {
     List<LeaveBalanceDTO> getLeaveBalanceByUser(Long userId);
+    LeaveBalanceDTO getLeaveBalanceByUserAndType(Long userId, Long leaveTypeId);
+
 
 }
