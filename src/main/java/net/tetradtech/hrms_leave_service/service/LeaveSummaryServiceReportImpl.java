@@ -60,6 +60,15 @@ public class LeaveSummaryServiceReportImpl implements LeaveSummaryServiceReport 
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public List<LeaveSummaryReportDTO> getSummaryForAllUsers() {
+        List<UserDTO> allUsers = userServiceClient.getAllUsers();
+
+        return allUsers.stream()
+                .flatMap(user -> getSummaryByUser(user.getId()).stream())
+                .collect(Collectors.toList());
+    }
+
 
 
 }

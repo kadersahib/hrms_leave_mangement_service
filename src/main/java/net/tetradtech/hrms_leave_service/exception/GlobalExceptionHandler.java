@@ -1,11 +1,11 @@
 package net.tetradtech.hrms_leave_service.exception;
 
-
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +16,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()
+                .body(new ApiResponse<>("error", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT) // or BAD_REQUEST
                 .body(new ApiResponse<>("error", ex.getMessage(), null));
     }
 
@@ -30,7 +36,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
+        // Log the error (optional)
+        ex.printStackTrace(); // or use a logger
+
+        // Send real error message instead of "Something went wrong"
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse<>("error", "Something went wrong", null));
+                .body(new ApiResponse<>("error", ex.getMessage(), null));
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 @Component
 public class UserServiceClient {
 
@@ -30,6 +32,20 @@ public class UserServiceClient {
         } catch (HttpClientErrorException.NotFound e) {
             // Return null so service layer can throw a custom exception
             return null;
+        }
+    }
+    public List<UserDTO> getAllUsers() {
+        try {
+            ResponseEntity<ApiResponse<List<UserDTO>>> response = restTemplate.exchange(
+                    BASE_URL,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<ApiResponse<List<UserDTO>>>() {}
+            );
+            return response.getBody().getData();
+        } catch (Exception e) {
+            System.out.println("Error fetching all users: " + e.getMessage());
+            return List.of();
         }
     }
 

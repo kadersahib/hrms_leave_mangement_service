@@ -1,5 +1,6 @@
 package net.tetradtech.hrms_leave_service.service;
 
+import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.LeaveCalendarDTO;
@@ -50,4 +51,35 @@ public class LeaveCalendarServiceImpl implements LeaveCalendarService {
             );
         }).collect(Collectors.toList());
     }
+
+    @Override
+    public List<LeaveCalendarDTO> getCalendarDataByUser(Long userId) {
+        UserDTO user = userServiceClient.getUserById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found with ID: " + userId);
+        }
+
+        List<LeaveApplication> leaves = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId)
+                .stream()
+                .filter(l -> l.getStatus() == LeaveStatus.APPROVED)
+                .toList();
+
+        if (leaves.isEmpty()) {
+            throw new IllegalArgumentException("Leave data not found for user with ID: " + userId);
+        }
+
+        return leaves.stream().map(leave -> {
+            long duration = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
+            return new LeaveCalendarDTO(
+                    leave.getUserId(),
+                    user.getName(),
+                    leave.getLeaveTypeId(),
+                    leave.getStartDate(),
+                    leave.getEndDate(),
+                    duration,
+                    leave.getStatus().name()
+            );
+        }).collect(Collectors.toList());
+    }
+
 }

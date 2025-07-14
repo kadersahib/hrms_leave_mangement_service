@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface LeaveCalendarService {
     List<LeaveCalendarDTO> getCalendarData();
+    List<LeaveCalendarDTO> getCalendarDataByUser(Long userId);
 
 }

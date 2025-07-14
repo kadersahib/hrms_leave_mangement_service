@@ -25,7 +25,7 @@ public class LeaveBalanceController {
     public ResponseEntity<?> getUserLeaveBalance(@PathVariable Long userId) {
         List<LeaveBalanceDTO> balances = leaveBalanceService.getLeaveBalanceByUser(userId);
 
-        return ResponseEntity.ok(Map.of("balance", balances,"userId", userId ));
+        return ResponseEntity.ok(Map.of("userId", userId,"balance", balances ));
 
     }
 
@@ -36,7 +36,7 @@ public class LeaveBalanceController {
             @PathVariable Long leaveTypeId
     ) {
         LeaveBalanceDTO balance = leaveBalanceService.getLeaveBalanceByUserAndType(userId, leaveTypeId);
-        return ResponseEntity.ok(Map.of("balance", balance,"userId", userId ));
+        return ResponseEntity.ok(Map.of("userId", userId,"balance", balance ));
 
 
     }
