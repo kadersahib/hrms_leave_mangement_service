@@ -1,6 +1,6 @@
 package net.tetradtech.hrms_leave_service.service;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
-import net.tetradtech.hrms_leave_service.model.LeaveStatus;
+import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -4,7 +4,7 @@ import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
 import net.tetradtech.hrms_leave_service.dto.LeaveTypeDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.model.LeaveApproval;
-import net.tetradtech.hrms_leave_service.model.LeaveStatus;
+import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import net.tetradtech.hrms_leave_service.repository.LeaveApprovalRepository;
 import org.springframework.beans.factory.annotation.Autowired;

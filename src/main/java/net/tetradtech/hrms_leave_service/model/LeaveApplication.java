@@ -4,6 +4,7 @@ package net.tetradtech.hrms_leave_service.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,6 @@ public class LeaveApplication {
     @NotNull(message = "End date is required")
     @Column(name = "end_date")
     private LocalDate endDate;
-
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -95,9 +95,5 @@ public class LeaveApplication {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void softDelete(String deletedByUser) {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
-        this.deletedBy = deletedByUser;
-    }
+
 }

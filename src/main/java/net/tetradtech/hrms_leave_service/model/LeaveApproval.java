@@ -52,9 +52,4 @@ public class LeaveApproval {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void softDelete(String deletedByUser) {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
-        this.deletedBy = deletedByUser;
-    }
 }
