@@ -77,7 +77,7 @@ public class LeaveApplicationController {
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getByUser(@PathVariable Long userId) {
         List<LeaveApplication> leaves = leaveApplicationService.getLeavesByUserId(userId);
         if (leaves.isEmpty()) {
-            return ResponseEntity.status(404).body(new ApiResponse<>("error", "No leaves found", null));
+            return ResponseEntity.status(404).body(new ApiResponse<>("error", "No UserId  found", null));
         }
         return ResponseEntity.ok(new ApiResponse<>("success", "Leaves fetched", leaves));
     }

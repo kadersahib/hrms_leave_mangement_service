@@ -1,7 +1,6 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import jakarta.validation.Valid;
-import net.tetradtech.hrms_leave_service.dto.LeaveApprovalUpdateDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApproval;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApprovalService;
@@ -38,7 +37,7 @@ public class LeaveApprovalController {
     @PutMapping("/{approvalId}")
     public ResponseEntity<ApiResponse<LeaveApproval>> updateApproval(
             @PathVariable Long approvalId,
-            @Valid @RequestBody LeaveApprovalUpdateDTO dto) {
+            @Valid @RequestBody LeaveApproval dto) {
 
         try {
             LeaveApproval updated = leaveApprovalService.updateApproval(approvalId, dto);

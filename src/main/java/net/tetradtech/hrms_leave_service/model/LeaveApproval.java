@@ -3,6 +3,7 @@ package net.tetradtech.hrms_leave_service.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,6 +22,8 @@ public class LeaveApproval {
 
     private String action; // APPROVED or REJECTED
     private String performedBy;
+    private LocalDate approvedFrom;
+    private LocalDate approvedTo;
 
     private String comment;
 

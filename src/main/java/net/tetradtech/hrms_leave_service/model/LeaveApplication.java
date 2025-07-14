@@ -53,9 +53,15 @@ public class LeaveApplication {
 
     private boolean active = true;
 
+    @Column(name = "remaining_days")
+    private Integer remainingDays;
+
     private String approvalComment;
     private String approvedBy;
+    private LocalDate approvedFrom;
+    private LocalDate approvedTo;
     private LocalDateTime approvalTimestamp;
+
 
     // Audit fields
     private LocalDateTime createdAt;

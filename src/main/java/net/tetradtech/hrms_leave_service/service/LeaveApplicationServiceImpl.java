@@ -12,6 +12,7 @@ import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -65,9 +66,15 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         if (exists) {
             throw new IllegalArgumentException("Leave already applied for this date range.");
         }
+
+        int currentYear = application.getStartDate().getYear();
+        LocalDate yearStart = LocalDate.of(currentYear, 1, 1);
+        LocalDate yearEnd = LocalDate.of(currentYear, 12, 31);
+
         long usedDays = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(application.getUserId()).stream()
                 .filter(l -> l.getLeaveTypeId().equals(application.getLeaveTypeId()))
                 .filter(l -> l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.PENDING)
+                .filter(l -> !l.getStartDate().isBefore(yearStart) && !l.getEndDate().isAfter(yearEnd)) // Only current year
                 .mapToLong(l -> ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1)
                 .sum();
 
@@ -83,7 +90,6 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         application.setAppliedDays((int) requestedDays);
         application.setMaxDays(leaveType.getMaxDays());
         application.setCreatedAt(LocalDateTime.now());
-//        application.setCreatedBy(user.getName());
         application.setCreatedBy(SYSTEM_USER);
         application.setStatus(LeaveStatus.PENDING);
         application.setDeleted(false);
@@ -129,21 +135,28 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             throw new IllegalArgumentException("Updated leave dates overlap with an existing leave.");
         }
 
+        int currentYear = updatedData.getStartDate().getYear();
+        LocalDate yearStart = LocalDate.of(currentYear, 1, 1);
+        LocalDate yearEnd = LocalDate.of(currentYear, 12, 31);
+
         //  Check if updating the leave will exceed max allowed days
         long usedDays = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId).stream()
                 .filter(l -> l.getLeaveTypeId().equals(updatedData.getLeaveTypeId()))
                 .filter(l -> l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.PENDING)
-                .filter(l -> !l.getId().equals(id)) // Exclude current leave
+                .filter(l -> !l.getId().equals(id)) // exclude current leave
+                .filter(l -> !l.getStartDate().isBefore(yearStart) && !l.getEndDate().isAfter(yearEnd))
                 .mapToLong(l -> ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1)
                 .sum();
 
         long totalAfterUpdate = usedDays + requestedDays;
 
         if (totalAfterUpdate > leaveType.getMaxDays()) {
+            long remaining = leaveType.getMaxDays() - usedDays;
             throw new IllegalArgumentException("Leave limit exceeded for leave type: " + leaveType.getName()
                     + ". Allowed: " + leaveType.getMaxDays()
                     + ", Already used/requested: " + usedDays
-                    + ", Trying to update: " + requestedDays);
+                    + ", Trying to update: " + requestedDays
+                    + ", Remaining: " + remaining + " day(s).");
         }
 
         leave.setUserId(userId);

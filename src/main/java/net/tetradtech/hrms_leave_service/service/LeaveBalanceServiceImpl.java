@@ -9,6 +9,7 @@ import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,12 +54,15 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
         return calculateLeaveBalance(userId, type);
     }
 
-
     private LeaveBalanceDTO calculateLeaveBalance(Long userId, LeaveTypeDTO type) {
         long usedDays = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId).stream()
                 .filter(l -> l.getLeaveTypeId().equals(type.getId()))
-                .filter(l -> l.getStatus() == LeaveStatus.APPROVED )
-                .mapToLong(l -> ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1)
+                .filter(l -> l.getStatus() == LeaveStatus.APPROVED)
+                .mapToLong(l -> {
+                    LocalDate from = l.getApprovedFrom() != null ? l.getApprovedFrom() : l.getStartDate();
+                    LocalDate to = l.getApprovedTo() != null ? l.getApprovedTo() : l.getEndDate();
+                    return ChronoUnit.DAYS.between(from, to) + 1;
+                })
                 .sum();
 
         long remainingDays = type.getMaxDays() - usedDays;
@@ -71,4 +75,5 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
                 remainingDays
         );
     }
+
 }
