@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeaveCancelDTO {
-    private Long leaveId;
+    private Long id;
     private Long userId;
-    private String cancelReason;
 }

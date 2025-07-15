@@ -21,6 +21,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     Optional<LeaveApplication> findTopByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
     List<LeaveApplication> findByUserIdAndIsDeletedFalse(Long userId);
     List<LeaveApplication> findByIsDeletedFalse();
+    Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);
 
     //status validation
     List<LeaveApplication> findByStatusAndIsDeletedFalse(LeaveStatus status);

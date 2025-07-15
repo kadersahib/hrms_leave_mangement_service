@@ -5,7 +5,6 @@ import jakarta.validation.Valid;
 import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
 import net.tetradtech.hrms_leave_service.dto.LeaveUpdateDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
-import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApplicationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,13 +48,9 @@ public class LeaveApplicationController {
 
             LeaveApplication existingLeave = latestOpt.get();
 
-            existingLeave.setLeaveTypeId(updatedData.getLeaveTypeId());
-            existingLeave.setReason(updatedData.getReason());
             existingLeave.setStartDate(updatedData.getStartDate());
             existingLeave.setEndDate(updatedData.getEndDate());
-            existingLeave.setStatus(LeaveStatus.valueOf(updatedData.getStatus().toUpperCase()));
             existingLeave.setReportingManager(updatedData.getReportingManager());
-            existingLeave.setMaxDays(updatedData.getMaxDays());
 
             existingLeave.setUserId(userId);
 
@@ -67,7 +62,7 @@ public class LeaveApplicationController {
         }
     }
 
-    @GetMapping("/active")    //active data only
+    @GetMapping("/all")    //active data only
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getAll() {
         List<LeaveApplication> leaves = leaveApplicationService.getAllLeaves();
         return ResponseEntity.ok(new ApiResponse<>("success", "All leaves fetched", leaves));
@@ -94,7 +89,7 @@ public class LeaveApplicationController {
         }
     }
 
-    @PutMapping("/cancel")
+    @PostMapping ("/cancel")
     public ResponseEntity<ApiResponse<LeaveApplication>> cancelLeave(@RequestBody LeaveCancelDTO dto) {
         try {
             LeaveApplication cancelled = leaveApplicationService.cancelLeave(dto);

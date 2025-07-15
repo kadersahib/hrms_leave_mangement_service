@@ -31,9 +31,6 @@ public class LeaveApplication {
     @Column(name = "leave_type_id", nullable = false)
     private Long leaveTypeId;
 
-    @NotBlank(message = "Reason is required")
-    private String reason;
-
     @NotNull(message = "Start date is required")
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -58,10 +55,14 @@ public class LeaveApplication {
 
     private String approvalComment;
     private String approvedBy;
-    private LocalDate approvedFrom;
-    private LocalDate approvedTo;
+    @Column(name = "approval_time")
     private LocalDateTime approvalTimestamp;
 
+    @Column(name = "cancelled_by")
+    private String cancelledBy;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
 
     // Audit fields
     private LocalDateTime createdAt;
@@ -70,30 +71,12 @@ public class LeaveApplication {
     private LocalDateTime updatedAt;
     private String updatedBy;
 
-    @Column(name = "cancelled_by")
-    private String cancelledBy;
-
-    @Column(name = "cancel_reason")
-    private String cancelReason;
-
-    @Column(name = "cancelled_at")
-    private LocalDateTime cancelledAt;
-
     // Soft delete fields
     private boolean isDeleted;
     private LocalDateTime deletedAt;
     private String deletedBy;
 
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 
 
 }

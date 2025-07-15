@@ -58,11 +58,7 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
         long usedDays = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId).stream()
                 .filter(l -> l.getLeaveTypeId().equals(type.getId()))
                 .filter(l -> l.getStatus() == LeaveStatus.APPROVED)
-                .mapToLong(l -> {
-                    LocalDate from = l.getApprovedFrom() != null ? l.getApprovedFrom() : l.getStartDate();
-                    LocalDate to = l.getApprovedTo() != null ? l.getApprovedTo() : l.getEndDate();
-                    return ChronoUnit.DAYS.between(from, to) + 1;
-                })
+                .mapToLong(l -> ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1)
                 .sum();
 
         long remainingDays = type.getMaxDays() - usedDays;
@@ -75,5 +71,6 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
                 remainingDays
         );
     }
+
 
 }

@@ -9,12 +9,16 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
-public class LeaveApplicationFilterServiceImpl implements LeaveApplicationStatusService {
+public class LeaveApplicationStatusServiceImpl implements LeaveApplicationStatusService {
 
     @Autowired
     private  LeaveApplicationRepository leaveApplicationRepository;
 
 
+    @Override
+    public List<LeaveApplication> filterByAllStatus() {
+        return leaveApplicationRepository.findByIsDeletedFalse();
+    }
     @Override
     public List<LeaveApplication> filterByStatus(String status) {
         LeaveStatus parsedStatus = parseStatus(status);

@@ -9,8 +9,6 @@ import java.util.List;
 public interface AttendanceService {
     AttendanceDTO clockIn(Long userId);
     AttendanceDTO clockOut(Long userId);
-    void markAbsentForUser(Long userId,LocalDate date);
-//    void autoMarkAbsentAtTwoPM();
     AttendanceSummaryDTO getMonthlySummary(Long userId, int year, int month);
     List<AttendanceSummaryDTO> getMonthlySummaryForAllUsers(int year, int month);
 

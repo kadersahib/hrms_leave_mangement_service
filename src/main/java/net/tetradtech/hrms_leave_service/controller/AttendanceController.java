@@ -31,15 +31,6 @@ public class AttendanceController {
         return ResponseEntity.ok(new ApiResponse<>("success", "Clock-out successful", dto));
     }
 
-    @PostMapping("/mark-absent/{userId}/{date}")
-    public ResponseEntity<ApiResponse<String>> markAbsentForUser(
-            @PathVariable Long userId,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-
-        attendanceService.markAbsentForUser(userId, date);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Marked user " + userId + " as absent on " + date, null));
-    }
-
     @GetMapping("/summary/userId/{userId}/{year}/{month}")
     public ResponseEntity<ApiResponse<AttendanceSummaryDTO>> summary(
             @PathVariable Long userId,

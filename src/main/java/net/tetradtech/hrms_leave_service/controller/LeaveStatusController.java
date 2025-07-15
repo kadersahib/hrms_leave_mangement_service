@@ -14,16 +14,22 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/filter")
-public class LeaveServiceController {
+public class LeaveStatusController {
 
     @Autowired
-    private LeaveApplicationStatusService leaveApplicationFilterService;
+    private LeaveApplicationStatusService leaveApplicationStatusService;
+
+
+    @GetMapping("/all")
+    public List<LeaveApplication> getAllLeaves() {
+        return leaveApplicationStatusService.filterByAllStatus();
+    }
 
     // Filter by Status
     @GetMapping("/status/{status}")
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getByStatus(@PathVariable String status) {
         try {
-            List<LeaveApplication> leaves = leaveApplicationFilterService.filterByStatus(status);
+            List<LeaveApplication> leaves = leaveApplicationStatusService.filterByStatus(status);
             return ResponseEntity.ok(new ApiResponse<>("success", "Filtered by status", leaves));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -34,7 +40,7 @@ public class LeaveServiceController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getByUserId(@PathVariable Long userId) {
         try {
-            List<LeaveApplication> leaves = leaveApplicationFilterService.filterByUserId(userId);
+            List<LeaveApplication> leaves = leaveApplicationStatusService.filterByUserId(userId);
             return ResponseEntity.ok(new ApiResponse<>("success", "Filtered by userId", leaves));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -47,7 +53,7 @@ public class LeaveServiceController {
             @PathVariable Long userId,
             @PathVariable String status) {
         try {
-            List<LeaveApplication> leaves = leaveApplicationFilterService.filterByUserIdAndStatus(userId, status);
+            List<LeaveApplication> leaves = leaveApplicationStatusService.filterByUserIdAndStatus(userId, status);
             return ResponseEntity.ok(new ApiResponse<>("success", "Filtered by userId and status", leaves));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -58,7 +64,7 @@ public class LeaveServiceController {
     @GetMapping("/leave-type/{leaveTypeId}")
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getByLeaveType(@PathVariable Long leaveTypeId) {
         try {
-            List<LeaveApplication> leaves = leaveApplicationFilterService.filterByLeaveType(leaveTypeId);
+            List<LeaveApplication> leaves = leaveApplicationStatusService.filterByLeaveType(leaveTypeId);
             return ResponseEntity.ok(new ApiResponse<>("success", "Filtered by leave type", leaves));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -71,7 +77,7 @@ public class LeaveServiceController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         try {
-            List<LeaveApplication> leaves = leaveApplicationFilterService
+            List<LeaveApplication> leaves = leaveApplicationStatusService
                     .filterByDateRange(userId, startDate, endDate);
 
             return ResponseEntity.ok(new ApiResponse<>("success", "Filtered by user and date", leaves));

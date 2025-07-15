@@ -69,33 +69,8 @@ public class AttendanceServiceImpl implements AttendanceService {
         return mapToDTO(attendanceRepository.save(record));
     }
 
-    // AttendanceServiceImpl.java
-
-    @Override
-    public void markAbsentForUser(Long userId, LocalDate date) {
-        boolean alreadyMarked = attendanceRepository
-                .findByUserIdAndDateAndIsDeletedFalse(userId, date)
-                .isPresent();
-
-        if (!alreadyMarked) {
-            AttendanceRecord record = new AttendanceRecord();
-            record.setUserId(userId);
-            record.setDate(date);
-            record.setAbsent(true);
-            record.setClockInTime(null);
-            record.setClockOutTime(null);
-            attendanceRepository.save(record);
-        } else {
-            throw new IllegalStateException("Attendance already exists for user on " + date);
-        }
-    }
 
 
-//    @Scheduled(cron = "0 0 22 * * ?") // Every day at 14:00 (2 PM)
-//    @Override
-//    public void autoMarkAbsentAtTwoPM() {
-//        markAbsentForDate(LocalDate.now());
-//    }
 
     @Override
     public AttendanceSummaryDTO getMonthlySummary(Long userId, int year, int month) {

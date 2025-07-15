@@ -1,7 +1,8 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import jakarta.validation.Valid;
-import net.tetradtech.hrms_leave_service.model.LeaveApproval;
+import net.tetradtech.hrms_leave_service.dto.LeaveApprovalDTO;
+import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApprovalService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +20,12 @@ public class LeaveApprovalController {
     private LeaveApprovalService leaveApprovalService;
 
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<LeaveApproval>> approveLeave(@RequestBody LeaveApproval dto) {
+    @PostMapping("/{leaveId}")
+    public ResponseEntity<ApiResponse<LeaveApplication>> approveLeave(
+            @PathVariable Long leaveId,
+            @Valid @RequestBody LeaveApprovalDTO dto) {
         try {
-            LeaveApproval result = leaveApprovalService.performAction(dto);
+            LeaveApplication result = leaveApprovalService.performAction(leaveId, dto);
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave action processed", result));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -34,31 +37,31 @@ public class LeaveApprovalController {
     }
 
 
-    @PutMapping("/{approvalId}")
-    public ResponseEntity<ApiResponse<LeaveApproval>> updateApproval(
-            @PathVariable Long approvalId,
-            @Valid @RequestBody LeaveApproval dto) {
-
+    @PutMapping("/{leaveId}")
+    public ResponseEntity<ApiResponse<LeaveApplication>> updateApproval(
+            @PathVariable Long leaveId,
+            @Valid @RequestBody LeaveApprovalDTO dto) {
         try {
-            LeaveApproval updated = leaveApprovalService.updateApproval(approvalId, dto);
+            LeaveApplication updated = leaveApprovalService.updateApproval(leaveId, dto);
             return ResponseEntity.ok(new ApiResponse<>("success", "Approval updated", updated));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
         } catch (Exception e) {
-            e.printStackTrace(); // log full stack trace
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>("error", "Something went wrong", null));
         }
     }
 
 
+
     @GetMapping
-    public ResponseEntity<ApiResponse<List<LeaveApproval>>> getAll() {
+    public ResponseEntity<ApiResponse<List<LeaveApplication>>> getAll() {
         return ResponseEntity.ok(new ApiResponse<>("success", "Fetched all approvals", leaveApprovalService.getAll()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<LeaveApproval>> getById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<LeaveApplication>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(new ApiResponse<>("success", "Fetched approval", leaveApprovalService.getById(id)));
     }
 

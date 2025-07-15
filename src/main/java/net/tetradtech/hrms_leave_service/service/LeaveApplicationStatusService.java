@@ -11,5 +11,5 @@ public interface LeaveApplicationStatusService {
     List<LeaveApplication> filterByLeaveType(Long leaveTypeId);
     List<LeaveApplication> filterByUserIdAndStatus(Long userId, String status);
     List<LeaveApplication> filterByDateRange(Long userId,LocalDate startDate, LocalDate endDate);
-
+    List<LeaveApplication> filterByAllStatus();
 }

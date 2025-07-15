@@ -4,14 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LeaveUpdateDTO {
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private String reportingManager;
+public class LeaveApprovalDTO {
+    private String action; // "APPROVED", "REJECTED"
+    private String performedBy;
+    private String comment;
 }
