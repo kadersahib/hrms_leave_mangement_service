@@ -6,6 +6,7 @@ import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,46 +22,59 @@ public class AttendanceController {
 
     @PostMapping("/clock-in/{userId}")
     public ResponseEntity<ApiResponse<AttendanceDTO>> clockIn(@PathVariable Long userId) {
-        AttendanceDTO dto = attendanceService.clockIn(userId);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Clock-in successful", dto));
+        try {
+            AttendanceDTO result = attendanceService.clockIn(userId);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Clock-in recorded", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>("error", e.getMessage(), null));
+        }
     }
 
     @PostMapping("/clock-out/{userId}")
     public ResponseEntity<ApiResponse<AttendanceDTO>> clockOut(@PathVariable Long userId) {
-        AttendanceDTO dto = attendanceService.clockOut(userId);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Clock-out successful", dto));
+        try {
+            AttendanceDTO result = attendanceService.clockOut(userId);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Clock-out recorded", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>("error", e.getMessage(), null));
+        }
     }
 
-    @GetMapping("/summary/userId/{userId}/{year}/{month}")
-    public ResponseEntity<ApiResponse<AttendanceSummaryDTO>> summary(
-            @PathVariable Long userId,
-            @PathVariable int year,
-            @PathVariable int month) {
-
-        AttendanceSummaryDTO summary = attendanceService.getMonthlySummary(userId, year, month);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Attendance summary fetched", summary));
+    @GetMapping("/daily-logs")
+    public ResponseEntity<ApiResponse<List<AttendanceDTO>>> getAllUserDailyLogs(@RequestParam String date) {
+        try {
+            List<AttendanceDTO> result = attendanceService.getAllUserDailyLogs(LocalDate.parse(date));
+            return ResponseEntity.ok(new ApiResponse<>("success", "Daily logs fetched", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>("error", e.getMessage(), null));
+        }
     }
 
-    @GetMapping("/summary/all/{year}/{month}")
-    public ResponseEntity<ApiResponse<List<AttendanceSummaryDTO>>> getAllUserMonthlySummary(
-            @PathVariable int year,
-            @PathVariable int month) {
-
-        List<AttendanceSummaryDTO> summaries = attendanceService.getMonthlySummaryForAllUsers(year, month);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Monthly summary for all users fetched", summaries));
+    @GetMapping("/user-log")
+    public ResponseEntity<ApiResponse<AttendanceDTO>> getUserLog(
+            @RequestParam Long userId,
+            @RequestParam String date) {
+        try {
+            AttendanceDTO result = attendanceService.getUserDailyLog(userId, LocalDate.parse(date));
+            return ResponseEntity.ok(new ApiResponse<>("success", "User log fetched", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>("error", e.getMessage(), null));
+        }
     }
 
 
-    @GetMapping("/daily/{userId}")
-    public ResponseEntity<ApiResponse<List<AttendanceDTO>>> logs(@PathVariable Long userId) {
-        List<AttendanceDTO> logs = attendanceService.getDailyLogs(userId);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Daily logs fetched", logs));
-    }
+    @GetMapping("/calendar")
+    public ResponseEntity<List<AttendanceDTO>> getUserCalendar(
+            @RequestParam Long userId,
+            @RequestParam int year,
+            @RequestParam int month) {
 
-    @GetMapping("/daily")
-    public ResponseEntity<ApiResponse<List<AttendanceDTO>>> getAllDailyLogs() {
-        List<AttendanceDTO> logs = attendanceService.getAllDailyLogs();
-        return ResponseEntity.ok(new ApiResponse<>("success", "All user logs fetched", logs));
+        List<AttendanceDTO> calendar = attendanceService.getMonthlyCalendar(userId, year, month);
+        return ResponseEntity.ok(calendar);
     }
 
 }

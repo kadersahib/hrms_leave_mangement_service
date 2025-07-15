@@ -4,6 +4,8 @@ package net.tetradtech.hrms_leave_service.repository;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -33,6 +35,18 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             LocalDate startDate,
             LocalDate endDate
     );
+
+    @Query("SELECT l FROM LeaveApplication l " +
+            "WHERE l.userId = :userId " +
+            "AND l.status = 'APPROVED' " +
+            "AND l.startDate <= :endDate " +
+            "AND l.endDate >= :startDate " +
+            "AND l.isDeleted = false")
+    List<LeaveApplication> findApprovedLeavesByUserIdAndDateRange(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
 
 
 }

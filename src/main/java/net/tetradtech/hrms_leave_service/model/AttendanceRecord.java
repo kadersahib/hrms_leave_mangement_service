@@ -23,27 +23,22 @@ public class AttendanceRecord {
 
     private Long userId;
     private LocalDate date;
-
     private LocalDateTime clockInTime;
-
     private LocalDateTime clockOutTime;
+    private boolean isLate;
+    private boolean isDeleted ;
+    private boolean absent ;
 
-    private boolean late = false;
+    private String status; // PRESENT, ABSENT, LEAVE, WEEKEND, HOLIDAY
+    private String source; // AUTO, MANUAL, LEAVE_SYSTEM
+    private String notes;
+    private boolean isWorkingDay;
+    private String attendanceType; // FULL_DAY, HALF_DAY
 
-    private boolean absent = false;
-
-
-    // Audit fields
-    private LocalDateTime createdAt;
     private String createdBy;
-
-    private LocalDateTime updatedAt;
     private String updatedBy;
-
-    // Soft delete fields
-    private boolean isDeleted;
-    private LocalDateTime deletedAt;
-    private String deletedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
 
 }

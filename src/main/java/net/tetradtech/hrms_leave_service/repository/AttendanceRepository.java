@@ -7,14 +7,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface AttendanceRepository extends JpaRepository<AttendanceRecord,Long> {
+public interface AttendanceRepository extends JpaRepository<AttendanceRecord, Long> {
     Optional<AttendanceRecord> findByUserIdAndDateAndIsDeletedFalse(Long userId, LocalDate date);
-
-    List<AttendanceRecord> findAllByDateAndIsDeletedFalse(LocalDate date);
-
     List<AttendanceRecord> findByUserIdAndIsDeletedFalse(Long userId);
-
     List<AttendanceRecord> findByIsDeletedFalse();
+    List<AttendanceRecord> findByDateAndIsDeletedFalse(LocalDate date);
+
+    boolean existsByUserIdAndDateAndIsDeletedFalse(Long userId, LocalDate date);
+
+    List<AttendanceRecord> findByUserIdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 
 
 }
