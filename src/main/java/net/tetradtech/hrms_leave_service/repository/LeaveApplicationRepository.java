@@ -36,17 +36,14 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             LocalDate endDate
     );
 
-    @Query("SELECT l FROM LeaveApplication l " +
-            "WHERE l.userId = :userId " +
-            "AND l.status = 'APPROVED' " +
-            "AND l.startDate <= :endDate " +
-            "AND l.endDate >= :startDate " +
-            "AND l.isDeleted = false")
-    List<LeaveApplication> findApprovedLeavesByUserIdAndDateRange(
-            @Param("userId") Long userId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+    List<LeaveApplication> findByUserIdAndLeaveTypeIdAndIsDeletedFalse(Long userId, Long leaveTypeId);
 
+
+    @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId AND l.status = 'APPROVED' AND l.startDate <= :end AND l.endDate >= :start")
+    List<LeaveApplication> findApprovedLeavesByUserIdAndDateRange(Long userId, LocalDate start, LocalDate end);
+
+
+    List<LeaveApplication> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
 
 
 }

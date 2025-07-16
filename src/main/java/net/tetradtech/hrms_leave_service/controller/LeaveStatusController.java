@@ -20,10 +20,6 @@ public class LeaveStatusController {
     private LeaveApplicationStatusService leaveApplicationStatusService;
 
 
-    @GetMapping("/all")
-    public List<LeaveApplication> getAllLeaves() {
-        return leaveApplicationStatusService.filterByAllStatus();
-    }
 
     // Filter by Status
     @GetMapping("/status/{status}")
@@ -85,6 +81,11 @@ public class LeaveStatusController {
             return ResponseEntity.badRequest()
                     .body(new ApiResponse<>("error", e.getMessage(), null));
         }
+    }
+
+    @GetMapping("/all")
+    public List<LeaveApplication> getAllLeaves() {
+        return leaveApplicationStatusService.filterByAllStatus();
     }
 
 

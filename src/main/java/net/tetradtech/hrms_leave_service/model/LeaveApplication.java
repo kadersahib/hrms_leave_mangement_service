@@ -1,6 +1,7 @@
 
 package net.tetradtech.hrms_leave_service.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -13,15 +14,15 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(
-        name = "leave_applications",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "start_date", "end_date"})
-)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+
+@Table(name = "leave_applications")
 public class LeaveApplication {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
 
     @NotNull(message = "User ID is required")
     @Column(name = "user_id", nullable = false)

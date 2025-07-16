@@ -2,6 +2,7 @@ package net.tetradtech.hrms_leave_service.controller;
 
 
 import net.tetradtech.hrms_leave_service.dto.LeaveBalanceDTO;
+import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveBalanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,22 +23,32 @@ public class LeaveBalanceController {
 
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getUserLeaveBalance(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<?>> getUserLeaveBalance(@PathVariable Long userId) {
         List<LeaveBalanceDTO> balances = leaveBalanceService.getLeaveBalanceByUser(userId);
 
-        return ResponseEntity.ok(Map.of("userId", userId,"balance", balances ));
+        ApiResponse<?> response = new ApiResponse<>(
+                "success",
+                "Leave balances fetched successfully",
+                Map.of("userId", userId, "balance", balances)
+        );
 
+        return ResponseEntity.ok(response);
     }
 
-
+    // GET: /user/{userId}/type/{leaveTypeId}
     @GetMapping("/user/{userId}/type/{leaveTypeId}")
-    public ResponseEntity<?> getUserLeaveBalanceByType(
+    public ResponseEntity<ApiResponse<?>> getUserLeaveBalanceByType(
             @PathVariable Long userId,
             @PathVariable Long leaveTypeId
     ) {
         LeaveBalanceDTO balance = leaveBalanceService.getLeaveBalanceByUserAndType(userId, leaveTypeId);
-        return ResponseEntity.ok(Map.of("userId", userId,"balance", balance ));
 
+        ApiResponse<?> response = new ApiResponse<>(
+                "success",
+                "Leave balance for the given type fetched successfully",
+                Map.of("userId", userId, "balance", balance)
+        );
 
+        return ResponseEntity.ok(response);
     }
 }

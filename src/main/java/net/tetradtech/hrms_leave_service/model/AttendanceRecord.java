@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.tetradtech.hrms_leave_service.Enum.AttendanceSource;
+import net.tetradtech.hrms_leave_service.Enum.AttendanceStatus;
+import net.tetradtech.hrms_leave_service.Enum.AttendanceType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,8 +16,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "attendance_records")
-
+@Table(
+        name = "attendance_records",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "date"}) // prevent duplicate for same day
+)
 public class AttendanceRecord {
 
     @Id
@@ -26,14 +31,20 @@ public class AttendanceRecord {
     private LocalDateTime clockInTime;
     private LocalDateTime clockOutTime;
     private boolean isLate;
-    private boolean isDeleted ;
-    private boolean absent ;
-
-    private String status; // PRESENT, ABSENT, LEAVE, WEEKEND, HOLIDAY
-    private String source; // AUTO, MANUAL, LEAVE_SYSTEM
-    private String notes;
+    private boolean isDeleted;
     private boolean isWorkingDay;
-    private String attendanceType; // FULL_DAY, HALF_DAY
+
+
+    @Enumerated(EnumType.STRING)
+    private AttendanceStatus status;  // PRESENT, ABSENT, LEAVE
+
+    @Enumerated(EnumType.STRING)
+    private AttendanceSource source;  // MANUAL, AUTO, LEAVE_SYSTEM
+
+    @Enumerated(EnumType.STRING)
+    private AttendanceType attendanceType; // FULL_TIME, HALF_DAY, NULL if not clocked-out
+
+    private String notes;
 
     private String createdBy;
     private String updatedBy;

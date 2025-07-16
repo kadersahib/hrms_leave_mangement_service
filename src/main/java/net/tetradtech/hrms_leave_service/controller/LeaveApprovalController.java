@@ -20,12 +20,12 @@ public class LeaveApprovalController {
     private LeaveApprovalService leaveApprovalService;
 
 
-    @PostMapping("/{leaveId}")
+    @PostMapping("/{id}")
     public ResponseEntity<ApiResponse<LeaveApplication>> approveLeave(
-            @PathVariable Long leaveId,
+            @PathVariable Long id,
             @Valid @RequestBody LeaveApprovalDTO dto) {
         try {
-            LeaveApplication result = leaveApprovalService.performAction(leaveId, dto);
+            LeaveApplication result = leaveApprovalService.performAction(id, dto);
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave action processed", result));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -37,12 +37,12 @@ public class LeaveApprovalController {
     }
 
 
-    @PutMapping("/{leaveId}")
+    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<LeaveApplication>> updateApproval(
-            @PathVariable Long leaveId,
+            @PathVariable Long id,
             @Valid @RequestBody LeaveApprovalDTO dto) {
         try {
-            LeaveApplication updated = leaveApprovalService.updateApproval(leaveId, dto);
+            LeaveApplication updated = leaveApprovalService.updateApproval(id, dto);
             return ResponseEntity.ok(new ApiResponse<>("success", "Approval updated", updated));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
@@ -52,6 +52,7 @@ public class LeaveApprovalController {
                     .body(new ApiResponse<>("error", "Something went wrong", null));
         }
     }
+
 
 
 

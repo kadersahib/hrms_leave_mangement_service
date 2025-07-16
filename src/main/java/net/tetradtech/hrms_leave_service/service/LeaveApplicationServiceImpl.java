@@ -1,4 +1,3 @@
-
 package net.tetradtech.hrms_leave_service.service;
 
 import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
@@ -17,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class LeaveApplicationServiceImpl implements LeaveApplicationService {
@@ -51,7 +51,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         }
 
         LocalDate today = LocalDate.now();
-        if (application.getStartDate().isBefore(today)) {
+        if (!application.getStartDate().isAfter(today)) {
             throw new IllegalArgumentException("Start date cannot be in the past.");
         }
         if (application.getEndDate().isBefore(application.getStartDate())) {
@@ -59,9 +59,6 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         }
 
         long requestedDays = ChronoUnit.DAYS.between(application.getStartDate(), application.getEndDate()) + 1;
-        if (requestedDays > leaveType.getMaxDays()) {
-            throw new IllegalArgumentException("Requested days exceed max allowed for leave type.");
-        }
 
         boolean sameDateLeaveExists = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(application.getUserId())
                 .stream()
@@ -70,6 +67,25 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
                                 existing.getEndDate().equals(application.getEndDate()));
         if (sameDateLeaveExists) {
             throw new IllegalArgumentException("Leave already applied for the same date range.");
+        }
+
+
+        int month = application.getStartDate().getMonthValue();
+        int year = application.getStartDate().getYear();
+
+
+        List<LeaveApplication> leavesThisMonth = leaveApplicationRepository
+                .findByUserIdAndLeaveTypeIdAndIsDeletedFalse(application.getUserId(), application.getLeaveTypeId())
+                .stream()
+                .filter(l -> (l.getStatus() == LeaveStatus.PENDING || l.getStatus() == LeaveStatus.APPROVED)) // exclude CANCELLED
+                .filter(l -> l.getStartDate().getMonthValue() == month && l.getStartDate().getYear() == year)
+                .collect(Collectors.toList());
+
+
+        int alreadyUsedDays = leavesThisMonth.stream().mapToInt(LeaveApplication::getAppliedDays).sum();
+
+        if (alreadyUsedDays + requestedDays > 2) {
+            throw new IllegalArgumentException("You can only apply 2 days per month for this leave type.");
         }
 
         //  Check if any previous record exists (to update)
@@ -85,8 +101,6 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             leave.setEndDate(application.getEndDate());
             leave.setAppliedDays((int) requestedDays);
             leave.setReportingManager(application.getReportingManager());
-            leave.setUpdatedAt(LocalDateTime.now());
-            leave.setUpdatedBy("system");
             leave.setStatus(LeaveStatus.PENDING);
         } else {
             //  No existing leave – create a new one
@@ -106,7 +120,6 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leave.setMaxDays(leaveType.getMaxDays());
         return leaveApplicationRepository.save(leave);
     }
-
 
 
     @Override
@@ -145,12 +158,6 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         }
 
         long requestedDays = ChronoUnit.DAYS.between(updatedData.getStartDate(), updatedData.getEndDate()) + 1;
-        if (requestedDays > leaveType.getMaxDays()) {
-            throw new IllegalArgumentException("Requested days (" + requestedDays + ") exceed max allowed ("
-                    + leaveType.getMaxDays() + ") for leave type: " + leaveType.getName());
-        }
-
-
 
         boolean isOverlapping = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId).stream()
                 .filter(existing -> !existing.getId().equals(id)) // Exclude the leave being updated
@@ -162,29 +169,20 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             throw new IllegalArgumentException("Leave dates overlap with an existing leave for the user.");
         }
 
+        int month = updatedData.getStartDate().getMonthValue();
+        int year = updatedData.getStartDate().getYear();
 
-        int currentYear = updatedData.getStartDate().getYear();
-        LocalDate yearStart = LocalDate.of(currentYear, 1, 1);
-        LocalDate yearEnd = LocalDate.of(currentYear, 12, 31);
+        List<LeaveApplication> leavesThisMonth = leaveApplicationRepository
+                .findByUserIdAndLeaveTypeIdAndIsDeletedFalse(userId, updatedData.getLeaveTypeId())
+                .stream()
+                .filter(l -> !l.getId().equals(id)) // Exclude the current leave
+                .filter(l -> l.getStartDate().getMonthValue() == month && l.getStartDate().getYear() == year)
+                .collect(Collectors.toList());
 
-        //  Check if updating the leave 2will exceed max allowed days
-        long usedDays = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId).stream()
-                .filter(l -> l.getLeaveTypeId().equals(updatedData.getLeaveTypeId()))
-                .filter(l -> l.getStatus() == LeaveStatus.APPROVED || l.getStatus() == LeaveStatus.PENDING)
-                .filter(l -> !l.getId().equals(id)) // exclude current leave
-                .filter(l -> !l.getStartDate().isBefore(yearStart) && !l.getEndDate().isAfter(yearEnd))
-                .mapToLong(l -> ChronoUnit.DAYS.between(l.getStartDate(), l.getEndDate()) + 1)
-                .sum();
+        int alreadyUsedDays = leavesThisMonth.stream().mapToInt(LeaveApplication::getAppliedDays).sum();
 
-        long totalAfterUpdate = usedDays + requestedDays;
-
-        if (totalAfterUpdate > leaveType.getMaxDays()) {
-            long remaining = leaveType.getMaxDays() - usedDays;
-            throw new IllegalArgumentException("Leave limit exceeded for leave type: " + leaveType.getName()
-                    + ". Allowed: " + leaveType.getMaxDays()
-                    + ", Already used/requested: " + usedDays
-                    + ", Trying to update: " + requestedDays
-                    + ", Remaining: " + remaining + " day(s).");
+        if (alreadyUsedDays + requestedDays > 2) {
+            throw new IllegalArgumentException("You can only apply 2 days per month for this leave type. More than that will affect your salary.");
         }
 
         leave.setUserId(userId);

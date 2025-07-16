@@ -22,13 +22,18 @@ public class LeaveApplicationStatusServiceImpl implements LeaveApplicationStatus
     @Override
     public List<LeaveApplication> filterByStatus(String status) {
         LeaveStatus parsedStatus = parseStatus(status);
-        return leaveApplicationRepository.findByStatusAndIsDeletedFalse(parsedStatus);
+        List<LeaveApplication> applications = leaveApplicationRepository.findByStatusAndIsDeletedFalse(parsedStatus);
+
+        if (applications.isEmpty()) {
+            throw new IllegalArgumentException("No leave applications found with status: " + status);
+        }
+        return applications;
     }
 
     @Override
     public List<LeaveApplication> filterByUserId(Long userId) {
         if (!leaveApplicationRepository.existsByUserIdAndIsDeletedFalse(userId)) {
-            throw new IllegalArgumentException("User ID " + userId + " not found in leave applications");
+            throw new IllegalArgumentException("User ID " + userId + " not found ");
         }
         return leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId);
     }

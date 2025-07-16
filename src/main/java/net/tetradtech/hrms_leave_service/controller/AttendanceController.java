@@ -1,11 +1,9 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import net.tetradtech.hrms_leave_service.dto.AttendanceDTO;
-import net.tetradtech.hrms_leave_service.dto.AttendanceSummaryDTO;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +40,12 @@ public class AttendanceController {
         }
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<AttendanceDTO>> getAllAttendanceRecords() {
+        List<AttendanceDTO> records = attendanceService.getAllAttendanceRecords();
+        return ResponseEntity.ok(records);
+    }
+
     @GetMapping("/daily-logs")
     public ResponseEntity<ApiResponse<List<AttendanceDTO>>> getAllUserDailyLogs(@RequestParam String date) {
         try {
@@ -66,15 +70,12 @@ public class AttendanceController {
         }
     }
 
-
-    @GetMapping("/calendar")
-    public ResponseEntity<List<AttendanceDTO>> getUserCalendar(
-            @RequestParam Long userId,
-            @RequestParam int year,
-            @RequestParam int month) {
-
-        List<AttendanceDTO> calendar = attendanceService.getMonthlyCalendar(userId, year, month);
-        return ResponseEntity.ok(calendar);
-    }
+//    @GetMapping("/calendar/leaves")
+//    public List<CalendarLeaveDTO> getAllUsersLeaveCalendar(
+//            @RequestParam int year,
+//            @RequestParam int month
+//    ) {
+//        return attendanceService.getAllUsersLeaveCalendar(year, month);
+//    }
 
 }
