@@ -2,7 +2,9 @@ package net.tetradtech.hrms_leave_service.mapper;
 
 import net.tetradtech.hrms_leave_service.dto.LeaveHistoryDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
+import org.springframework.stereotype.Component;
 
+@Component
 public class LeaveHistoryMapper {
     public static LeaveHistoryDTO toDTO(LeaveApplication leave, String userName, String leaveTypeName) {
         LeaveHistoryDTO dto = new LeaveHistoryDTO();

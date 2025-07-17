@@ -45,5 +45,12 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
     List<LeaveApplication> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
 
+    @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId " +
+            "AND :today BETWEEN l.startDate AND l.endDate " +
+            "AND l.status = :status " +
+            "AND l.isDeleted = false")
+    List<LeaveApplication> findApprovedLeavesForToday(@Param("userId") Long userId,
+                                                      @Param("today") LocalDate today,
+                                                      @Param("status") LeaveStatus status);
 
 }

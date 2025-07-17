@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import net.tetradtech.hrms_leave_service.Enum.DayOffType;
 import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 
 import java.time.LocalDate;
@@ -44,8 +45,11 @@ public class LeaveApplication {
     @Column(name = "status")
     private LeaveStatus status;
 
-    private String reportingManager;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "leave_day_type")
+    private DayOffType DayOffType;
 
+    private String reportingManager;
     private int maxDays;
     private int appliedDays;
 
@@ -76,8 +80,6 @@ public class LeaveApplication {
     private boolean isDeleted;
     private LocalDateTime deletedAt;
     private String deletedBy;
-
-
 
 
 }

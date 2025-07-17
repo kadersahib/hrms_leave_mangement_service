@@ -14,6 +14,8 @@ public interface AttendanceService {
     List<AttendanceDTO> getAllUserDailyLogs(LocalDate date);
     AttendanceDTO getUserDailyLog(Long userId, LocalDate date);
     List<AttendanceDTO> getAllAttendanceRecords();
+    int getDailyPresentCount(LocalDate date);
+    void deleteRecentAttendanceByUserId(Long userId);
 
 
 }

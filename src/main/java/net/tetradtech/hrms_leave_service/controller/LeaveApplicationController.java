@@ -2,8 +2,9 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import jakarta.validation.Valid;
+import net.tetradtech.hrms_leave_service.Enum.DayOffType;
 import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
-import net.tetradtech.hrms_leave_service.dto.LeaveUpdateDTO;
+import net.tetradtech.hrms_leave_service.dto.LeaveRequestDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApplicationService;
@@ -25,7 +26,7 @@ public class LeaveApplicationController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<LeaveApplication>> apply(
-            @Valid @RequestBody LeaveApplication application) {
+            @Valid @RequestBody LeaveRequestDTO application) {
         try {
             LeaveApplication saved = leaveApplicationService.applyLeave(application);
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave applied successfully", saved));
@@ -37,7 +38,7 @@ public class LeaveApplicationController {
     @PutMapping("/{userId}")
     public ResponseEntity<ApiResponse<LeaveApplication>> updateLatest(
             @PathVariable Long userId,
-            @Valid @RequestBody LeaveUpdateDTO updatedData
+            @Valid @RequestBody LeaveRequestDTO updatedData
     ) {
         try {
             Optional<LeaveApplication> latestOpt = leaveApplicationService.getUpdateByUserId(userId);
@@ -48,19 +49,24 @@ public class LeaveApplicationController {
 
             LeaveApplication existingLeave = latestOpt.get();
 
+            // Update leave fields from DTO
             existingLeave.setStartDate(updatedData.getStartDate());
             existingLeave.setEndDate(updatedData.getEndDate());
             existingLeave.setReportingManager(updatedData.getReportingManager());
-
-            existingLeave.setUserId(userId);
+            existingLeave.setDayOffType(DayOffType.fromString(updatedData.getDayOffType()));
 
             LeaveApplication updated = leaveApplicationService.updateLeave(existingLeave.getId(), existingLeave);
+
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave updated successfully", updated));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>("error", "Something went wrong: " + e.getMessage(), null));
         }
     }
+
 
     @GetMapping("/all")    //active data only
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getAll() {

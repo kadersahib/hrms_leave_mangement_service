@@ -1,12 +1,12 @@
 package net.tetradtech.hrms_leave_service.service;
 
-import net.tetradtech.hrms_leave_service.Enum.AttendanceSource;
-import net.tetradtech.hrms_leave_service.Enum.AttendanceStatus;
-import net.tetradtech.hrms_leave_service.Enum.AttendanceType;
+import net.tetradtech.hrms_leave_service.Enum.*;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.AttendanceDTO;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
+import net.tetradtech.hrms_leave_service.mapper.AttendanceMapper;
 import net.tetradtech.hrms_leave_service.model.AttendanceRecord;
+import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.AttendanceRepository;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,12 +26,14 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Autowired
     private UserServiceClient userServiceClient;
+
+    @Autowired
+    private LeaveApplicationRepository leaveApplicationRepository;
     @Autowired
     private AttendanceRepository attendanceRepository;
+
     @Autowired
-    private LeaveApplicationRepository leaveRepository;
-
-
+    private AttendanceMapper attendanceMapper;
 
     @Override
     public AttendanceDTO clockIn(Long userId) {
@@ -47,29 +50,59 @@ public class AttendanceServiceImpl implements AttendanceService {
             throw new IllegalStateException("Already clocked in.");
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        AttendanceRecord record = new AttendanceRecord();
+        // Step 1: Check if the user is on approved leave today
+        List<LeaveApplication> leaves = leaveApplicationRepository
+                .findApprovedLeavesForToday(userId, today, LeaveStatus.APPROVED);
 
+        DayOffType dayOffType = DayOffType.FULLDAY; // Default
+
+        for (LeaveApplication leave : leaves) {
+            dayOffType = leave.getDayOffType(); // Use leave day type from leave application
+
+            if (dayOffType == DayOffType.FULLDAY) {
+                throw new IllegalStateException("Cannot clock in. Full day leave is approved.");
+            }
+
+            LocalTime now = LocalTime.now();
+
+            if (dayOffType == DayOffType.FIRSTOFF && now.isBefore(LocalTime.NOON)) {
+                throw new IllegalStateException("Cannot clock in during First Off. Leave is approved.");
+            }
+
+            if (dayOffType == DayOffType.SECONDOFF && now.isAfter(LocalTime.NOON)) {
+                throw new IllegalStateException("Cannot clock in during Second Off. Leave is approved.");
+            }
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalTime clockInTime = now.toLocalTime();
+
+        AttendanceRecord record = new AttendanceRecord();
         record.setUserId(userId);
         record.setDate(today);
         record.setClockInTime(now);
-        record.setLate(now.toLocalTime().isAfter(OFFICE_START));
+        record.setLate(clockInTime.isAfter(OFFICE_START));
         record.setDeleted(false);
         record.setWorkingDay(true);
-        record.setStatus(now.toLocalTime().isAfter(OFFICE_START) ? AttendanceStatus.LATE : AttendanceStatus.ONTIME);
+        record.setStatus(clockInTime.isAfter(OFFICE_START) ? AttendanceStatus.LATE : AttendanceStatus.ONTIME);
         record.setSource(AttendanceSource.MANUAL);
         record.setCreatedBy("System");
-        record.setCreatedAt(LocalDateTime.now());
+        record.setCreatedAt(now);
+        record.setDayOffType(dayOffType);
 
-        return mapToDTO(attendanceRepository.save(record));
+        return attendanceMapper.mapToDTO(attendanceRepository.save(record));
     }
-
 
     @Override
     public AttendanceDTO clockOut(Long userId) {
+        UserDTO user = userServiceClient.getUserById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("Invalid user ID: " + userId);
+        }
+
         LocalDate today = LocalDate.now();
         AttendanceRecord record = attendanceRepository.findByUserIdAndDateAndIsDeletedFalse(userId, today)
-                .orElseThrow(() -> new IllegalStateException("Clock-in not found."));
+                .orElseThrow(() -> new IllegalStateException("No clock-in record found for today."));
 
         if (record.getClockOutTime() != null) {
             throw new IllegalStateException("Already clocked out.");
@@ -77,28 +110,16 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         LocalDateTime now = LocalDateTime.now();
         record.setClockOutTime(now);
-
-        if (record.getClockInTime() != null) {
-            Duration duration = Duration.between(record.getClockInTime(), now);
-            long hours = duration.toHours();
-
-            if (hours >= 8) {
-                record.setAttendanceType(AttendanceType.FULL_TIME);
-            } else if (hours >= 4) {
-                record.setAttendanceType(AttendanceType.HALF_DAY);
-            } else {
-                record.setAttendanceType(AttendanceType.SHORT_HOURS);
-            }
-        }
-
-        record.setUpdatedAt(LocalDateTime.now());
+        record.setUpdatedAt(now);
         record.setUpdatedBy("System");
 
-        return mapToDTO(attendanceRepository.save(record));
+        return attendanceMapper.mapToDTO(attendanceRepository.save(record));
     }
 
 
-    @Scheduled(cron = "0 0 18 * * ?")
+
+
+    @Scheduled(cron = "0 0 20 * * ?")
     public void autoMarkAbsentees() {
         LocalDate today = LocalDate.now();
         List<UserDTO> allUsers = userServiceClient.getAllUsers();
@@ -117,20 +138,17 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
     }
 
-
-
     @Override
     public List<AttendanceDTO> getAllAttendanceRecords() {
         return attendanceRepository.findAll().stream()
-                .map(this::mapToDTO)
+                .map(attendanceMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
-
 
     @Override
     public List<AttendanceDTO> getAllUserDailyLogs(LocalDate date) {
         return attendanceRepository.findByDateAndIsDeletedFalse(date).stream()
-                .map(this::mapToDTO)
+                .map(attendanceMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -138,31 +156,31 @@ public class AttendanceServiceImpl implements AttendanceService {
     public AttendanceDTO getUserDailyLog(Long userId, LocalDate date) {
         AttendanceRecord record = attendanceRepository.findByUserIdAndDateAndIsDeletedFalse(userId, date)
                 .orElseThrow(() -> new IllegalArgumentException("No record found"));
-        return mapToDTO(record);
+        return attendanceMapper.mapToDTO(record);
     }
 
-    private AttendanceDTO mapToDTO(AttendanceRecord r) {
-        AttendanceDTO dto = new AttendanceDTO();
-        dto.setId(r.getId());
-        dto.setUserId(r.getUserId());
-        dto.setDate(r.getDate());
-        dto.setClockInTime(r.getClockInTime());
-        dto.setClockOutTime(r.getClockOutTime());
-        dto.setLate(r.isLate());
-
-        // Safely handle enum to string conversion
-        dto.setStatus(r.getStatus() != null ? r.getStatus().name() : null);
-        dto.setAttendanceType(r.getAttendanceType() != null ? r.getAttendanceType().name() : null);
-
-        // Avoid NullPointerException if user is not found
-        UserDTO user = userServiceClient.getUserById(r.getUserId());
-        dto.setName(user != null ? user.getName() : "Unknown");
-
-        return dto;
+    @Override
+    public int getDailyPresentCount(LocalDate date) {
+        List<AttendanceStatus> presentStatuses = Arrays.asList(AttendanceStatus.ONTIME, AttendanceStatus.LATE);
+        return attendanceRepository.countByDateAndIsDeletedFalseAndStatusIn(date, presentStatuses);
     }
 
+    @Override
+    public void deleteRecentAttendanceByUserId(Long userId) {
+        Optional<AttendanceRecord> optionalRecord =
+                attendanceRepository.findTopByUserIdAndIsDeletedFalseOrderByDateDesc(userId);
 
+        if (optionalRecord.isEmpty()) {
+            throw new IllegalArgumentException("No attendance record found for user ID: " + userId);
+        }
 
+        AttendanceRecord record = optionalRecord.get();
+        record.setDeleted(true);
+        record.setUpdatedAt(LocalDateTime.now());
+        record.setUpdatedBy("System");
+
+        attendanceRepository.save(record);
+    }
 
 
 }

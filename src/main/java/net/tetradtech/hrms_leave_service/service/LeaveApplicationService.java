@@ -1,6 +1,7 @@
 package net.tetradtech.hrms_leave_service.service;
 
 import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
+import net.tetradtech.hrms_leave_service.dto.LeaveRequestDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 
 import java.util.List;
@@ -8,9 +9,9 @@ import java.util.Optional;
 
 public interface LeaveApplicationService {
 
-    LeaveApplication applyLeave(LeaveApplication application);
+    LeaveApplication applyLeave(LeaveRequestDTO application);
 
-    LeaveApplication updateLeave(Long id, LeaveApplication updatedData);
+    LeaveApplication updateLeave(Long userId, LeaveApplication updatedData);
 
     List<LeaveApplication> getAllLeaves();//active data only
 

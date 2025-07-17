@@ -70,12 +70,31 @@ public class AttendanceController {
         }
     }
 
-//    @GetMapping("/calendar/leaves")
-//    public List<CalendarLeaveDTO> getAllUsersLeaveCalendar(
-//            @RequestParam int year,
-//            @RequestParam int month
-//    ) {
-//        return attendanceService.getAllUsersLeaveCalendar(year, month);
-//    }
+    @GetMapping("/daily-present")
+    public ResponseEntity<ApiResponse<Integer>> getDailyPresentCount(@RequestParam String date) {
+        try {
+            LocalDate localDate = LocalDate.parse(date.trim());
+            int count = attendanceService.getDailyPresentCount(localDate);
+            ApiResponse<Integer> response = new ApiResponse<>("success", "Present user count fetched", count);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            ApiResponse<Integer> errorResponse = new ApiResponse<>(
+                    "error",
+                    "Invalid date format or internal error",
+                    null
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<String>> deleteRecentByUserId(@PathVariable Long userId) {
+        attendanceService.deleteRecentAttendanceByUserId(userId);
+        return ResponseEntity.ok(new ApiResponse<>("success", "Recent attendance record deleted for user ID: " + userId, null));
+    }
+
+
+
+
 
 }

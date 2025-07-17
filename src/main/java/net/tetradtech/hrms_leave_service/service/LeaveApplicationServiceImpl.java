@@ -1,8 +1,10 @@
 package net.tetradtech.hrms_leave_service.service;
 
+import net.tetradtech.hrms_leave_service.Enum.DayOffType;
 import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
+import net.tetradtech.hrms_leave_service.dto.LeaveRequestDTO;
 import net.tetradtech.hrms_leave_service.dto.LeaveTypeDTO;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
@@ -30,12 +32,11 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Autowired
     private LeaveTypeClient leaveTypeClient;
 
-
     private static final String SYSTEM_USER = "system";
 
 
     @Override
-    public LeaveApplication applyLeave(LeaveApplication application) {
+    public LeaveApplication applyLeave(LeaveRequestDTO application) {
         UserDTO user = userServiceClient.getUserById(application.getUserId());
         if (user == null) {
             throw new IllegalArgumentException("Invalid user ID: " + application.getUserId());
@@ -101,6 +102,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             leave.setEndDate(application.getEndDate());
             leave.setAppliedDays((int) requestedDays);
             leave.setReportingManager(application.getReportingManager());
+            leave.setDayOffType(DayOffType.fromString(application.getDayOffType()));
             leave.setStatus(LeaveStatus.PENDING);
         } else {
             //  No existing leave – create a new one
@@ -114,6 +116,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             leave.setCreatedAt(LocalDateTime.now());
             leave.setCreatedBy("system");
             leave.setStatus(LeaveStatus.PENDING);
+            leave.setDayOffType(DayOffType.fromString(application.getDayOffType()));
             leave.setDeleted(false);
         }
 
@@ -149,7 +152,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
         LocalDate today = LocalDate.now();
 
-        if (updatedData.getStartDate().isBefore(today)) {
+        if (!updatedData.getStartDate().isBefore(today)) {
             throw new IllegalArgumentException("Start date cannot be in the past.");
         }
 
@@ -192,6 +195,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leave.setReportingManager(updatedData.getReportingManager());
         leave.setAppliedDays((int) requestedDays);
         leave.setMaxDays(leaveType.getMaxDays());
+        leave.setDayOffType(updatedData.getDayOffType());
         leave.setUpdatedAt(LocalDateTime.now());
         leave.setUpdatedBy("system");
 
@@ -253,8 +257,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leave.setUpdatedAt(LocalDateTime.now());
         leave.setCreatedAt(LocalDateTime.now());
         leave.setCancelledAt(LocalDateTime.now());
-        leave.setCancelledBy("system");
-        leave.setUpdatedBy("system"); 
+        leave.setCancelledBy(SYSTEM_USER);
+        leave.setUpdatedBy(SYSTEM_USER);
 
         return leaveApplicationRepository.save(leave);
 

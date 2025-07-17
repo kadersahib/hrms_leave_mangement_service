@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.tetradtech.hrms_leave_service.Enum.AttendanceSource;
 import net.tetradtech.hrms_leave_service.Enum.AttendanceStatus;
-import net.tetradtech.hrms_leave_service.Enum.AttendanceType;
+import net.tetradtech.hrms_leave_service.Enum.DayOffType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,20 +36,18 @@ public class AttendanceRecord {
 
 
     @Enumerated(EnumType.STRING)
-    private AttendanceStatus status;  // PRESENT, ABSENT, LEAVE
+    private AttendanceStatus status;
 
     @Enumerated(EnumType.STRING)
-    private AttendanceSource source;  // MANUAL, AUTO, LEAVE_SYSTEM
+    private AttendanceSource source;
 
     @Enumerated(EnumType.STRING)
-    private AttendanceType attendanceType; // FULL_TIME, HALF_DAY, NULL if not clocked-out
+    @Column(name = "DayOff_Type")
+    private DayOffType DayOffType;
 
-    private String notes;
-
+//    private String notes;
     private String createdBy;
     private String updatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-
 }
