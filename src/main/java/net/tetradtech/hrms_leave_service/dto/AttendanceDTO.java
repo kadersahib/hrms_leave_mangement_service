@@ -18,5 +18,6 @@ public class AttendanceDTO {
     private String name;
     private String status;
     private boolean isLate;
-    private String DayOffType;
+    private String designation;
+
 }

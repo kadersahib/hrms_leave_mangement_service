@@ -1,12 +1,13 @@
 package net.tetradtech.hrms_leave_service.service;
 
 import net.tetradtech.hrms_leave_service.Enum.*;
+import net.tetradtech.hrms_leave_service.client.DesignationClient;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.AttendanceDTO;
+import net.tetradtech.hrms_leave_service.dto.DesignationDTO;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.mapper.AttendanceMapper;
 import net.tetradtech.hrms_leave_service.model.AttendanceRecord;
-import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.AttendanceRepository;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,7 +25,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Autowired
     private UserServiceClient userServiceClient;
-
+    @Autowired
+    private DesignationClient designationClient;
     @Autowired
     private LeaveApplicationRepository leaveApplicationRepository;
     @Autowired
@@ -44,53 +44,33 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
 
         LocalDate today = LocalDate.now();
-        Optional<AttendanceRecord> existing = attendanceRepository
-                .findByUserIdAndDateAndIsDeletedFalse(userId, today);
-        if (existing.isPresent()) {
-            throw new IllegalStateException("Already clocked in.");
-        }
-
-        // Step 1: Check if the user is on approved leave today
-        List<LeaveApplication> leaves = leaveApplicationRepository
-                .findApprovedLeavesForToday(userId, today, LeaveStatus.APPROVED);
-
-        DayOffType dayOffType = DayOffType.FULLDAY; // Default
-
-        for (LeaveApplication leave : leaves) {
-            dayOffType = leave.getDayOffType(); // Use leave day type from leave application
-
-            if (dayOffType == DayOffType.FULLDAY) {
-                throw new IllegalStateException("Cannot clock in. Full day leave is approved.");
-            }
-
-            LocalTime now = LocalTime.now();
-
-            if (dayOffType == DayOffType.FIRSTOFF && now.isBefore(LocalTime.NOON)) {
-                throw new IllegalStateException("Cannot clock in during First Off. Leave is approved.");
-            }
-
-            if (dayOffType == DayOffType.SECONDOFF && now.isAfter(LocalTime.NOON)) {
-                throw new IllegalStateException("Cannot clock in during Second Off. Leave is approved.");
-            }
-        }
-
         LocalDateTime now = LocalDateTime.now();
-        LocalTime clockInTime = now.toLocalTime();
+
+        Optional<AttendanceRecord> existing = attendanceRepository.findByUserIdAndDate(userId, today);
+        if (existing.isPresent()) {
+            throw new IllegalStateException("Already clocked in for today.");
+        }
+
+        DesignationDTO designation = designationClient.getDesignationById(user.getDesignation());
+        if (designation == null) {
+            throw new IllegalArgumentException("Invalid designation ID for user.");
+        }
 
         AttendanceRecord record = new AttendanceRecord();
         record.setUserId(userId);
         record.setDate(today);
         record.setClockInTime(now);
-        record.setLate(clockInTime.isAfter(OFFICE_START));
-        record.setDeleted(false);
-        record.setWorkingDay(true);
-        record.setStatus(clockInTime.isAfter(OFFICE_START) ? AttendanceStatus.LATE : AttendanceStatus.ONTIME);
+        record.setLate(now.toLocalTime().isAfter(OFFICE_START));
+        record.setStatus(now.toLocalTime().isAfter(OFFICE_START) ? AttendanceStatus.LATE : AttendanceStatus.ONTIME);
         record.setSource(AttendanceSource.MANUAL);
-        record.setCreatedBy("System");
+        record.setDesignation(designation.getTitle());
+        record.setCreatedBy("SYSTEM");
         record.setCreatedAt(now);
-        record.setDayOffType(dayOffType);
+        record.setWorkingDay(true);
+        record.setDeleted(false);
 
-        return attendanceMapper.mapToDTO(attendanceRepository.save(record));
+        AttendanceRecord savedRecord = attendanceRepository.save(record);
+        return attendanceMapper.mapToDTO(savedRecord); // Ensure your mapper includes the 'designation' field
     }
 
     @Override
@@ -116,47 +96,85 @@ public class AttendanceServiceImpl implements AttendanceService {
         return attendanceMapper.mapToDTO(attendanceRepository.save(record));
     }
 
-
-
-
-    @Scheduled(cron = "0 0 20 * * ?")
+    @Scheduled(cron = "0 0 18 * * ?")
     public void autoMarkAbsentees() {
         LocalDate today = LocalDate.now();
         List<UserDTO> allUsers = userServiceClient.getAllUsers();
         for (UserDTO user : allUsers) {
             boolean exists = attendanceRepository.existsByUserIdAndDateAndIsDeletedFalse(user.getId(), today);
             if (!exists) {
-                AttendanceRecord r = new AttendanceRecord();
-                r.setUserId(user.getId());
-                r.setDate(today);
-                r.setStatus(AttendanceStatus.ABSENT);
-                r.setSource(AttendanceSource.AUTO);
-                r.setCreatedBy("System");
-                r.setCreatedAt(LocalDateTime.now());
-                attendanceRepository.save(r);
+                AttendanceRecord record = new AttendanceRecord();
+                record.setUserId(user.getId());
+                record.setDate(today);
+                record.setStatus(AttendanceStatus.ABSENT);
+                record.setSource(AttendanceSource.AUTO);
+                record.setCreatedBy("System");
+                record.setCreatedAt(LocalDateTime.now());
+                attendanceRepository.save(record);
             }
         }
     }
 
-    @Override
-    public List<AttendanceDTO> getAllAttendanceRecords() {
-        return attendanceRepository.findAll().stream()
-                .map(attendanceMapper::mapToDTO)
-                .collect(Collectors.toList());
-    }
 
     @Override
     public List<AttendanceDTO> getAllUserDailyLogs(LocalDate date) {
-        return attendanceRepository.findByDateAndIsDeletedFalse(date).stream()
-                .map(attendanceMapper::mapToDTO)
-                .collect(Collectors.toList());
+        List<AttendanceRecord> records = attendanceRepository.findByDateAndIsDeletedFalse(date);
+        List<AttendanceDTO> result = new ArrayList<>();
+
+        for (AttendanceRecord record : records) {
+            AttendanceDTO dto = attendanceMapper.mapToDTO(record);
+
+            UserDTO user = userServiceClient.getUserById(record.getUserId());
+            if (user != null) {
+                DesignationDTO designation = designationClient.getDesignationById(user.getDesignation());
+                dto.setDesignation(designation != null ? designation.getTitle() : null);
+            } else {
+                dto.setDesignation(null);
+            }
+
+            result.add(dto);
+        }
+
+        return result;
     }
+
 
     @Override
     public AttendanceDTO getUserDailyLog(Long userId, LocalDate date) {
         AttendanceRecord record = attendanceRepository.findByUserIdAndDateAndIsDeletedFalse(userId, date)
                 .orElseThrow(() -> new IllegalArgumentException("No record found"));
-        return attendanceMapper.mapToDTO(record);
+
+        AttendanceDTO dto = attendanceMapper.mapToDTO(record);
+
+        UserDTO user = userServiceClient.getUserById(userId);
+        if (user != null) {
+            DesignationDTO designation = designationClient.getDesignationById(user.getDesignation());
+            dto.setDesignation(designation != null ? designation.getTitle() : null);
+        } else {
+            dto.setDesignation(null);
+        }
+
+        return dto;
+    }
+
+    @Override
+    public List<AttendanceDTO> getAllAttendanceRecords() {
+        List<AttendanceRecord> records = attendanceRepository.findAll();
+        List<AttendanceDTO> result = new ArrayList<>();
+
+        for (AttendanceRecord record : records) {
+            AttendanceDTO dto = attendanceMapper.mapToDTO(record);
+
+            UserDTO user = userServiceClient.getUserById(record.getUserId());
+            if (user != null) {
+                DesignationDTO designation = designationClient.getDesignationById(user.getDesignation());
+                dto.setDesignation(designation != null ? designation.getTitle() : null);
+            } else {
+                dto.setDesignation(null);
+            }
+            result.add(dto);
+        }
+        return result;
     }
 
     @Override
@@ -181,6 +199,33 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         attendanceRepository.save(record);
     }
+
+    @Override
+    public List<AttendanceDTO> getAttendanceByDesignation(String designation) {
+        List<AttendanceRecord> records = attendanceRepository.findByDesignationLike(designation);
+        return records.stream()
+                .map(attendanceMapper::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+
+    @Override
+    public List<AttendanceDTO> getAttendanceByDesignationAndDateRange(String designation, LocalDate startDate, LocalDate endDate) {
+        List<AttendanceRecord> records = attendanceRepository.findByDesignationAndDateRange(designation, startDate, endDate);
+        return records.stream()
+                .map(attendanceMapper::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getAllDesignations() {
+        return attendanceRepository.findAll().stream()
+                .map(AttendanceRecord::getDesignation)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
 
 
 }

@@ -1,7 +1,7 @@
 package net.tetradtech.hrms_leave_service.service;
 
 import net.tetradtech.hrms_leave_service.dto.AttendanceDTO;
-import net.tetradtech.hrms_leave_service.dto.CalendarAttendanceDTO;
+import net.tetradtech.hrms_leave_service.model.AttendanceRecord;
 
 
 import java.time.LocalDate;
@@ -17,5 +17,8 @@ public interface AttendanceService {
     int getDailyPresentCount(LocalDate date);
     void deleteRecentAttendanceByUserId(Long userId);
 
+    List<AttendanceDTO> getAttendanceByDesignation(String designation);
+    List<AttendanceDTO> getAttendanceByDesignationAndDateRange(String designation, LocalDate startDate, LocalDate endDate);
+    List<String> getAllDesignations();
 
 }

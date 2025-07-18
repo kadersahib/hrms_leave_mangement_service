@@ -26,19 +26,19 @@ public class LeaveApplication {
 
 
     @NotNull(message = "User ID is required")
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "userId", nullable = false)
     private Long userId;
 
     @NotNull(message = "Leave type ID is required")
-    @Column(name = "leave_type_id", nullable = false)
+    @Column(name = "leaveTypeId", nullable = false)
     private Long leaveTypeId;
 
     @NotNull(message = "Start date is required")
-    @Column(name = "start_date")
+    @Column(name = "startDate")
     private LocalDate startDate;
 
     @NotNull(message = "End date is required")
-    @Column(name = "end_date")
+    @Column(name = "endDate")
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
@@ -46,39 +46,60 @@ public class LeaveApplication {
     private LeaveStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "leave_day_type")
-    private DayOffType DayOffType;
+    @Column(name = "dayoff")
+    private DayOffType dayOffType;
 
+    @Column(name = "reportingManger")
     private String reportingManager;
+
+    @Column(name = "maxDays")
     private int maxDays;
+
+    @Column(name = "appliedDays")
     private int appliedDays;
 
-    private boolean active = true;
+    @Column(name = "isActive")
+    private Boolean active = true;
 
-    @Column(name = "remaining_days")
+    @Column(name = "remainingDays")
     private Integer remainingDays;
 
+    @Column(name = "approvalComment")
     private String approvalComment;
+
+    @Column(name = "approveBy")
     private String approvedBy;
-    @Column(name = "approval_time")
+
+    @Column(name = "approvalTime")
     private LocalDateTime approvalTimestamp;
 
-    @Column(name = "cancelled_by")
+    @Column(name = "cancelledBy")
     private String cancelledBy;
 
-    @Column(name = "cancelled_at")
+    @Column(name = "cancelledAt")
     private LocalDateTime cancelledAt;
 
     // Audit fields
+    @Column(name = "createdAt")
     private LocalDateTime createdAt;
+
+    @Column(name = "createdBy")
     private String createdBy;
 
+    @Column(name = "updatedAt")
     private LocalDateTime updatedAt;
+
+    @Column(name = "updatedBy")
     private String updatedBy;
 
     // Soft delete fields
+    @Column(name = "isDeleted")
     private boolean isDeleted;
+
+    @Column(name = "deletedAt")
     private LocalDateTime deletedAt;
+
+    @Column(name = "deletedBy")
     private String deletedBy;
 
 

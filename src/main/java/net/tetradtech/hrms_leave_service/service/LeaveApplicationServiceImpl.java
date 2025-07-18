@@ -104,6 +104,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             leave.setReportingManager(application.getReportingManager());
             leave.setDayOffType(DayOffType.fromString(application.getDayOffType()));
             leave.setStatus(LeaveStatus.PENDING);
+            leave.setUpdatedAt(LocalDateTime.now());
+            leave.setUpdatedBy("system");
         } else {
             //  No existing leave – create a new one
             leave = new LeaveApplication();
@@ -113,10 +115,10 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             leave.setEndDate(application.getEndDate());
             leave.setAppliedDays((int) requestedDays);
             leave.setReportingManager(application.getReportingManager());
+            leave.setDayOffType(DayOffType.fromString(application.getDayOffType()));
             leave.setCreatedAt(LocalDateTime.now());
             leave.setCreatedBy("system");
             leave.setStatus(LeaveStatus.PENDING);
-            leave.setDayOffType(DayOffType.fromString(application.getDayOffType()));
             leave.setDeleted(false);
         }
 

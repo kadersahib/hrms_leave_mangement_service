@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.tetradtech.hrms_leave_service.Enum.AttendanceSource;
 import net.tetradtech.hrms_leave_service.Enum.AttendanceStatus;
-import net.tetradtech.hrms_leave_service.Enum.DayOffType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,9 +40,9 @@ public class AttendanceRecord {
     @Enumerated(EnumType.STRING)
     private AttendanceSource source;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "DayOff_Type")
-    private DayOffType DayOffType;
+    @Column(name = "designation", length = 30)
+    private String designation;
+
 
 //    private String notes;
     private String createdBy;

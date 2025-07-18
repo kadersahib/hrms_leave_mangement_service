@@ -20,7 +20,7 @@ public class UserServiceClient {
 
     private final String BASE_URL = "http://localhost:8080/api/users";
 
-    public UserDTO getUserById(Long id) {
+        public UserDTO getUserById(Long id) {
         try {
             ResponseEntity<ApiResponse<UserDTO>> response = restTemplate.exchange(
                     BASE_URL + "/" + id,
@@ -30,24 +30,23 @@ public class UserServiceClient {
             );
             return response.getBody().getData();
         } catch (HttpClientErrorException.NotFound e) {
-            // Return null so service layer can throw a custom exception
             return null;
         }
     }
-    public List<UserDTO> getAllUsers() {
-        try {
-            ResponseEntity<ApiResponse<List<UserDTO>>> response = restTemplate.exchange(
-                    BASE_URL,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<ApiResponse<List<UserDTO>>>() {}
-            );
-            return response.getBody().getData();
-        } catch (Exception e) {
-            System.out.println("Error fetching all users: " + e.getMessage());
-            return List.of();
+        public List<UserDTO> getAllUsers() {
+            try {
+                ResponseEntity<ApiResponse<List<UserDTO>>> response = restTemplate.exchange(
+                        BASE_URL,
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<ApiResponse<List<UserDTO>>>() {}
+                );
+                return response.getBody().getData();
+            } catch (Exception e) {
+                System.out.println("Error fetching all users: " + e.getMessage());
+                return List.of();
+            }
         }
-    }
 
 }
 

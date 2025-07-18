@@ -1,7 +1,10 @@
 package net.tetradtech.hrms_leave_service.response;
 
 
+import net.tetradtech.hrms_leave_service.model.AttendanceRecord;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ApiResponse<T> {
     private String status;
@@ -15,6 +18,8 @@ public class ApiResponse<T> {
         this.data = data;
         this.timestamp = LocalDateTime.now();
     }
+
+
 
     // Getters & Setters
 

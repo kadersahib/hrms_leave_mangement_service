@@ -13,23 +13,20 @@ public class AttendanceMapper {
     @Autowired
     private UserServiceClient userServiceClient;
 
-    public AttendanceDTO mapToDTO(AttendanceRecord r) {
+    public AttendanceDTO mapToDTO(AttendanceRecord record) {
         AttendanceDTO dto = new AttendanceDTO();
-        dto.setId(r.getId());
-        dto.setUserId(r.getUserId());
-        dto.setDate(r.getDate());
-        dto.setClockInTime(r.getClockInTime());
-        dto.setClockOutTime(r.getClockOutTime());
-        dto.setLate(r.isLate());
+        dto.setId(record.getId());
+        dto.setUserId(record.getUserId());
+        dto.setDate(record.getDate());
+        dto.setClockInTime(record.getClockInTime());
+        dto.setClockOutTime(record.getClockOutTime());
+        dto.setLate(record.isLate());
 
-
-        // Safely handle enum to string conversion
-        dto.setStatus(r.getStatus() != null ? r.getStatus().name() : null);
-        dto.setDayOffType(r.getDayOffType() != null ? r.getDayOffType().name() : null);
-
+        dto.setStatus(record.getStatus() != null ? record.getStatus().name() : null);
         // Avoid NullPointerException if user is not found
-        UserDTO user = userServiceClient.getUserById(r.getUserId());
+        UserDTO user = userServiceClient.getUserById(record.getUserId());
         dto.setName(user != null ? user.getName() : "Unknown");
+        dto.setDesignation(record.getDesignation());
 
         return dto;
     }
