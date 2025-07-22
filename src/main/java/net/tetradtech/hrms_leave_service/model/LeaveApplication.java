@@ -73,6 +73,24 @@ public class LeaveApplication {
     @Column(name = "approvalTime")
     private LocalDateTime approvalTimestamp;
 
+
+    //  New Summary Fields
+    @Column(name = "total_applied")
+    private Integer totalApplied;
+
+    @Column(name = "approved_count")
+    private Integer approvedCount;
+
+    @Column(name = "rejected_count")
+    private Integer rejectedCount;
+
+    @Column(name = "pending_count")
+    private Integer pendingCount;
+
+    @Column(name = "cancelled_count")
+    private Integer cancelledCount;
+
+
     @Column(name = "cancelledBy")
     private String cancelledBy;
 

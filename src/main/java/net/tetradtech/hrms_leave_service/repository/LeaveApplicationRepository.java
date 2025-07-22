@@ -37,6 +37,7 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     );
 
     List<LeaveApplication> findByUserIdAndLeaveTypeIdAndIsDeletedFalse(Long userId, Long leaveTypeId);
+    Optional<LeaveApplication> findByUserIdAndLeaveTypeId(Long userId, Long leaveTypeId);
 
 
     @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId AND l.status = 'APPROVED' AND l.startDate <= :end AND l.endDate >= :start")

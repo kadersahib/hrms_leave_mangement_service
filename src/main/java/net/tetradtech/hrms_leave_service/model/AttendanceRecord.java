@@ -44,7 +44,6 @@ public class AttendanceRecord {
     private String designation;
 
 
-//    private String notes;
     private String createdBy;
     private String updatedBy;
     private LocalDateTime createdAt;

@@ -17,4 +17,5 @@ public class CalendarAttendanceDTO {
     private LocalDate date;
     private String status;
     private Long leaveTypeId;
+    private String designation;
 }

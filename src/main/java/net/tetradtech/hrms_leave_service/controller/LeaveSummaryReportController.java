@@ -17,17 +17,19 @@ import java.util.List;
 public class LeaveSummaryReportController {
 
     @Autowired
-    private LeaveSummaryServiceReport leaveSummaryService;
+    private LeaveSummaryServiceReport leaveSummaryServiceReport;
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<LeaveSummaryReportDTO>>> getSummaryByUser(@PathVariable Long userId) {
-        List<LeaveSummaryReportDTO> summary = leaveSummaryService.getSummaryByUser(userId);
-        return ResponseEntity.ok(new ApiResponse<>("success", "Leave summary fetched successfully", summary));
+    public ResponseEntity<ApiResponse<LeaveSummaryReportDTO>> getSummaryByUser(@PathVariable Long userId) {
+        LeaveSummaryReportDTO summary = leaveSummaryServiceReport.getSummaryByUser(userId);
+        ApiResponse<LeaveSummaryReportDTO> response = new ApiResponse<>("success", "Leave summary fetched successfully", summary);
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/user/all")
     public ResponseEntity<ApiResponse<List<LeaveSummaryReportDTO>>> getSummaryForAllUsers() {
-        List<LeaveSummaryReportDTO> data = leaveSummaryService.getSummaryForAllUsers();
+        List<LeaveSummaryReportDTO> data = leaveSummaryServiceReport.getSummaryForAllUsers();
         return ResponseEntity.ok(new ApiResponse<>("success", "Leave summary for all users", data));
     }
 

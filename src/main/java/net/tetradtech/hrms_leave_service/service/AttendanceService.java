@@ -17,8 +17,8 @@ public interface AttendanceService {
     int getDailyPresentCount(LocalDate date);
     void deleteRecentAttendanceByUserId(Long userId);
 
-    List<AttendanceDTO> getAttendanceByDesignation(String designation);
-    List<AttendanceDTO> getAttendanceByDesignationAndDateRange(String designation, LocalDate startDate, LocalDate endDate);
-    List<String> getAllDesignations();
+//    List<AttendanceDTO> getAttendanceByDesignation(String designation);
+//    List<AttendanceDTO> getAttendanceByDesignationAndDateRange(String designation, LocalDate startDate, LocalDate endDate);
+//    List<String> getAllDesignations();
 
 }

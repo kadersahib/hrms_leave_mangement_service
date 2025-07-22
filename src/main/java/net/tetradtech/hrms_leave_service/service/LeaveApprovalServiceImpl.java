@@ -60,7 +60,7 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
         leave.setApprovedBy(dto.getPerformedBy());
         leave.setApprovalTimestamp(LocalDateTime.now());
         leave.setUpdatedAt(LocalDateTime.now());
-        leave.setUpdatedBy(dto.getPerformedBy());
+        leave.setUpdatedBy(SYSTEM_USER);
 
         return leaveApplicationRepository.save(leave);
     }
@@ -98,7 +98,7 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
         leave.setApprovedBy(dto.getPerformedBy());
         leave.setApprovalTimestamp(LocalDateTime.now());
         leave.setUpdatedAt(LocalDateTime.now());
-        leave.setUpdatedBy(dto.getPerformedBy());
+        leave.setUpdatedBy(SYSTEM_USER);
 
         return leaveApplicationRepository.save(leave);
     }

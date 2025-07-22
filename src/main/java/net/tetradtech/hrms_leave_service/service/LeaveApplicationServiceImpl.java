@@ -3,10 +3,7 @@ package net.tetradtech.hrms_leave_service.service;
 import net.tetradtech.hrms_leave_service.Enum.DayOffType;
 import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
-import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
-import net.tetradtech.hrms_leave_service.dto.LeaveRequestDTO;
-import net.tetradtech.hrms_leave_service.dto.LeaveTypeDTO;
-import net.tetradtech.hrms_leave_service.dto.UserDTO;
+import net.tetradtech.hrms_leave_service.dto.*;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
@@ -28,6 +25,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Autowired
     private UserServiceClient userServiceClient;
+
 
     @Autowired
     private LeaveTypeClient leaveTypeClient;
@@ -123,9 +121,29 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         }
 
         leave.setMaxDays(leaveType.getMaxDays());
-        return leaveApplicationRepository.save(leave);
-    }
+        LeaveApplication savedLeave = leaveApplicationRepository.save(leave);
 
+        // Handle Leave Summary update
+        Optional<LeaveApplication> summaryOpt = leaveApplicationRepository
+                .findByUserIdAndLeaveTypeId(application.getUserId(), application.getLeaveTypeId());
+
+        LeaveApplication summary;
+        if (summaryOpt.isPresent()) {
+            summary = summaryOpt.get();
+            summary.setTotalApplied(summary.getTotalApplied() + 1);
+            summary.setPendingCount(summary.getPendingCount() + 1);
+        } else {
+            summary = new LeaveApplication();
+            summary.setTotalApplied(1);
+            summary.setPendingCount(1);
+            summary.setApprovedCount(0);
+            summary.setRejectedCount(0);
+            summary.setCancelledCount(0);
+        }
+
+        leaveApplicationRepository.save(summary);
+        return savedLeave;
+    }
 
     @Override
     public LeaveApplication updateLeave(Long id, LeaveApplication updatedData) {
@@ -154,7 +172,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
         LocalDate today = LocalDate.now();
 
-        if (!updatedData.getStartDate().isBefore(today)) {
+        if (updatedData.getStartDate().isBefore(today)) {
             throw new IllegalArgumentException("Start date cannot be in the past.");
         }
 
@@ -189,6 +207,40 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         if (alreadyUsedDays + requestedDays > 2) {
             throw new IllegalArgumentException("You can only apply 2 days per month for this leave type. More than that will affect your salary.");
         }
+
+        // Leave Summary Adjustment START
+        // If leave type changed, update both summaries
+        if (!leave.getLeaveTypeId().equals(updatedData.getLeaveTypeId())) {
+            // Decrement from old leave type
+            Optional<LeaveApplication> oldSummaryOpt = leaveApplicationRepository
+                    .findByUserIdAndLeaveTypeId(userId, leave.getLeaveTypeId());
+
+            oldSummaryOpt.ifPresent(oldSummary -> {
+                oldSummary.setTotalApplied(Math.max(0, oldSummary.getTotalApplied() - 1));
+                oldSummary.setPendingCount(Math.max(0, oldSummary.getPendingCount() - 1));
+                leaveApplicationRepository.save(oldSummary);
+            });
+
+            // Increment for new leave type
+            Optional<LeaveApplication> newSummaryOpt = leaveApplicationRepository
+                    .findByUserIdAndLeaveTypeId(userId, updatedData.getLeaveTypeId());
+
+            LeaveApplication newSummary = newSummaryOpt.orElseGet(() -> {
+                LeaveApplication summary = new LeaveApplication();
+
+                summary.setTotalApplied(0);
+                summary.setPendingCount(0);
+                summary.setApprovedCount(0);
+                summary.setRejectedCount(0);
+                summary.setCancelledCount(0);
+                return summary;
+            });
+
+            newSummary.setTotalApplied(newSummary.getTotalApplied() + 1);
+            newSummary.setPendingCount(newSummary.getPendingCount() + 1);
+            leaveApplicationRepository.save(newSummary);
+        }
+        // Leave Summary Adjustment EN
 
         leave.setUserId(userId);
         leave.setLeaveTypeId(updatedData.getLeaveTypeId());

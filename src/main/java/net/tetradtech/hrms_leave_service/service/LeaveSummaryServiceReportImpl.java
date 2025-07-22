@@ -3,7 +3,6 @@ package net.tetradtech.hrms_leave_service.service;
 import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.LeaveSummaryReportDTO;
-import net.tetradtech.hrms_leave_service.dto.LeaveTypeDTO;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
@@ -26,49 +25,58 @@ public class LeaveSummaryServiceReportImpl implements LeaveSummaryServiceReport 
     private LeaveTypeClient leaveTypeClient;
 
     @Override
-    public List<LeaveSummaryReportDTO> getSummaryByUser(Long userId) {
-
+    public LeaveSummaryReportDTO getSummaryByUser(Long userId) {
         UserDTO user = userServiceClient.getUserById(userId);
         if (user == null) {
             throw new IllegalArgumentException("User not found with ID: " + userId);
         }
 
         List<LeaveApplication> applications = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId);
-        List<LeaveTypeDTO> leaveTypes = leaveTypeClient.getAllLeaveTypes();
 
-        return leaveTypes.stream().map(type -> {
-            List<LeaveApplication> filtered = applications.stream()
-                    .filter(app -> app.getLeaveTypeId().equals(type.getId()))
-                    .collect(Collectors.toList());
+        int total = applications.size();
+        int approved = (int) applications.stream().filter(l -> l.getStatus() == LeaveStatus.APPROVED).count();
+        int rejected = (int) applications.stream().filter(l -> l.getStatus() == LeaveStatus.REJECTED).count();
+        int pending = (int) applications.stream().filter(l -> l.getStatus() == LeaveStatus.PENDING).count();
+        int cancelled = (int) applications.stream().filter(l -> l.getStatus() == LeaveStatus.CANCELLED).count();
 
-            int total = filtered.size();
-            int approved = (int) filtered.stream().filter(l -> l.getStatus() == LeaveStatus.APPROVED).count();
-            int rejected = (int) filtered.stream().filter(l -> l.getStatus() == LeaveStatus.REJECTED).count();
-            int pending = (int) filtered.stream().filter(l -> l.getStatus() == LeaveStatus.PENDING).count();
-            int cancelled = (int) filtered.stream().filter(l -> l.getStatus() == LeaveStatus.CANCELLED).count();
-
-            return new LeaveSummaryReportDTO(
-                    userId,
-                    type.getId(),
-                    type.getName(),
-                    total,
-                    approved,
-                    rejected,
-                    pending,
-                    cancelled
-            );
-        }).collect(Collectors.toList());
+        return new LeaveSummaryReportDTO(userId, total, approved, rejected, pending, cancelled);
     }
 
     @Override
     public List<LeaveSummaryReportDTO> getSummaryForAllUsers() {
-        List<UserDTO> allUsers = userServiceClient.getAllUsers();
-
-        return allUsers.stream()
-                .flatMap(user -> getSummaryByUser(user.getId()).stream())
+        List<UserDTO> users = userServiceClient.getAllUsers();
+        return users.stream()
+                .map(user -> getSummaryByUser(user.getId()))
                 .collect(Collectors.toList());
     }
 
 
+//    @Override
+//    public LeaveSummaryReportDTO getLeaveSummaryTotalOnly() {
+//        List<LeaveSummaryReportDTO> userSummaries = leaveApplicationRepository.getLeaveSummaryPerUser();
+//
+//        int totalApplied = 0;
+//        int approvedCount = 0;
+//        int rejectedCount = 0;
+//        int pendingCount = 0;
+//        int cancelledCount = 0;
+//
+//        for (LeaveSummaryReportDTO dto : userSummaries) {
+//            totalApplied += dto.getTotalApplied();
+//            approvedCount += dto.getApprovedCount();
+//            rejectedCount += dto.getRejectedCount();
+//            pendingCount += dto.getPendingCount();
+//            cancelledCount += dto.getCancelledCount();
+//        }
+//
+//        return new LeaveSummaryReportDTO(
+//                0L, // or null, just to show it's a total
+//                totalApplied,
+//                approvedCount,
+//                rejectedCount,
+//                pendingCount,
+//                cancelledCount
+//        );
+//    }
 
 }

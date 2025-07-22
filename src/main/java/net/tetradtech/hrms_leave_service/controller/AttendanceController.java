@@ -1,17 +1,14 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import net.tetradtech.hrms_leave_service.dto.AttendanceDTO;
-import net.tetradtech.hrms_leave_service.model.AttendanceRecord;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -95,30 +92,4 @@ public class AttendanceController {
         attendanceService.deleteRecentAttendanceByUserId(userId);
         return ResponseEntity.ok(new ApiResponse<>("success", "Recent attendance record deleted for user ID: " + userId, null));
     }
-
-    @GetMapping("/by-designation/{designation}")
-    public ResponseEntity<ApiResponse<List<AttendanceDTO>>> getByDesignation(@PathVariable String designation) {
-        List<AttendanceDTO> attendances = attendanceService.getAttendanceByDesignation(designation);
-        return ResponseEntity.ok(
-                new ApiResponse<>("success", "Attendance records fetched for designation containing: " + designation, attendances)
-        );
-    }
-
-
-    @GetMapping("/by-designation-and-date")
-    public ResponseEntity<ApiResponse<List<AttendanceDTO>>> getByDesignationAndDateRange(
-            @RequestParam String designation,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        List<AttendanceDTO> attendances = attendanceService.getAttendanceByDesignationAndDateRange(designation, startDate, endDate);
-        return ResponseEntity.ok(
-                new ApiResponse<>("success", "Attendance fetched for designation and date range", attendances)
-        );
-    }
-
-
-
-
-
 }

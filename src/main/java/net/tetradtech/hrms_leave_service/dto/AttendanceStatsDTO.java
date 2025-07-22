@@ -1,5 +1,6 @@
 package net.tetradtech.hrms_leave_service.dto;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,11 +8,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LeaveSummaryReportDTO {
+public class AttendanceStatsDTO {
     private Long userId;
-    private int totalApplied;
-    private int approvedCount;
-    private int rejectedCount;
-    private int pendingCount;
-    private int cancelledCount;
+    private long totalWorkingDays;
+    private long onTimeDays;
+    private long lateDays;
+    private long weekendDaysWorked;
+
 }

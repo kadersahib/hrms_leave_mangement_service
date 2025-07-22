@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,7 +55,10 @@ public class LeaveApplicationController {
             existingLeave.setEndDate(updatedData.getEndDate());
             existingLeave.setReportingManager(updatedData.getReportingManager());
             existingLeave.setDayOffType(DayOffType.fromString(updatedData.getDayOffType()));
+            existingLeave.setLeaveTypeId(updatedData.getLeaveTypeId());
 
+            existingLeave.setUpdatedAt(LocalDateTime.now());
+            existingLeave.setUpdatedBy("system");
             LeaveApplication updated = leaveApplicationService.updateLeave(existingLeave.getId(), existingLeave);
 
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave updated successfully", updated));

@@ -1,7 +1,9 @@
 package net.tetradtech.hrms_leave_service.service;
 
+import net.tetradtech.hrms_leave_service.client.DesignationClient;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.CalendarAttendanceDTO;
+import net.tetradtech.hrms_leave_service.dto.DesignationDTO;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
@@ -20,12 +22,20 @@ public class LeaveCalenderServiceImpl implements LeaveCalenderService {
     private LeaveApplicationRepository leaveApplicationRepository;
 
     @Autowired
+    private DesignationClient designationClient;
+
+    @Autowired
     private UserServiceClient userServiceClient;
 
     @Override
     public List<CalendarAttendanceDTO> getUserMonthlyCalendar(Long userId, int year, int month) {
         UserDTO user = userServiceClient.getUserById(userId);
         if (user == null) throw new IllegalArgumentException("User not found");
+
+        DesignationDTO designation = designationClient.getDesignationById(user.getDesignation());
+        if (designation == null) {
+            throw new IllegalArgumentException("Invalid designation ID for user.");
+        }
 
         List<CalendarAttendanceDTO> result = new ArrayList<>();
         YearMonth yearMonth = YearMonth.of(year, month);
@@ -45,6 +55,7 @@ public class LeaveCalenderServiceImpl implements LeaveCalenderService {
                 dto.setDate(d);
                 dto.setStatus("LEAVE");
                 dto.setLeaveTypeId(leave.getLeaveTypeId());
+                dto.setDesignation(designation.getTitle());
                 result.add(dto);
             }
         }
