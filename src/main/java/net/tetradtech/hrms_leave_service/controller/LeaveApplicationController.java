@@ -2,20 +2,15 @@
 package net.tetradtech.hrms_leave_service.controller;
 
 import jakarta.validation.Valid;
-import net.tetradtech.hrms_leave_service.Enum.DayOffType;
-import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
 import net.tetradtech.hrms_leave_service.dto.LeaveRequestDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApplicationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/leaves")
@@ -36,38 +31,22 @@ public class LeaveApplicationController {
         }
     }
 
-    @PutMapping("/{userId}")
-    public ResponseEntity<ApiResponse<LeaveApplication>> updateLatest(
-            @PathVariable Long userId,
-            @Valid @RequestBody LeaveRequestDTO updatedData
-    ) {
+    @PutMapping("/update")
+    public ResponseEntity<ApiResponse<LeaveApplication>> updateLeave(
+            @Valid @RequestBody LeaveRequestDTO updatedData) {
         try {
-            Optional<LeaveApplication> latestOpt = leaveApplicationService.getUpdateByUserId(userId);
-            if (latestOpt.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ApiResponse<>("error", "No recent leave found for user ID: " + userId, null));
+            if (updatedData.getUserId() == null) {
+                return ResponseEntity.badRequest().body(
+                        new ApiResponse<>("error", "User ID is required in the request body", null)
+                );
             }
+            LeaveApplication updated = leaveApplicationService.updateLeave(updatedData.getUserId(), updatedData);
+            int remainingDays = updated.getMaxDays() - updated.getAppliedDays();
+            String message = "Leave updated successfully. Remaining days: " + remainingDays;
 
-            LeaveApplication existingLeave = latestOpt.get();
-
-            // Update leave fields from DTO
-            existingLeave.setStartDate(updatedData.getStartDate());
-            existingLeave.setEndDate(updatedData.getEndDate());
-            existingLeave.setReportingManager(updatedData.getReportingManager());
-            existingLeave.setDayOffType(DayOffType.fromString(updatedData.getDayOffType()));
-            existingLeave.setLeaveTypeId(updatedData.getLeaveTypeId());
-
-            existingLeave.setUpdatedAt(LocalDateTime.now());
-            existingLeave.setUpdatedBy("system");
-            LeaveApplication updated = leaveApplicationService.updateLeave(existingLeave.getId(), existingLeave);
-
-            return ResponseEntity.ok(new ApiResponse<>("success", "Leave updated successfully", updated));
-
+            return ResponseEntity.ok(new ApiResponse<>("success", message, updated));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>("error", "Something went wrong: " + e.getMessage(), null));
         }
     }
 
@@ -99,17 +78,15 @@ public class LeaveApplicationController {
         }
     }
 
-    @PostMapping ("/cancel")
-    public ResponseEntity<ApiResponse<LeaveApplication>> cancelLeave(@RequestBody LeaveCancelDTO dto) {
+    @PostMapping("/cancel/{userId}")
+    public ResponseEntity<ApiResponse<LeaveApplication>> cancelLeave(@PathVariable Long userId) {
         try {
-            LeaveApplication cancelled = leaveApplicationService.cancelLeave(dto);
+            LeaveApplication cancelled = leaveApplicationService.cancelLeave(userId);
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave cancelled successfully", cancelled));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
         }
     }
-
-
 
 
 }

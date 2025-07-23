@@ -11,7 +11,7 @@ public class LeaveHistoryMapper {
         dto.setId(leave.getId());
         dto.setUserId(leave.getUserId());
         dto.setName(userName);
-        dto.setLeaveTypeId(leave.getLeaveTypeId());
+//        dto.setLeaveTypeId(leave.getLeaveTypeId());
         dto.setLeaveTypeName(leaveTypeName);
         dto.setStatus(leave.getStatus().name());
         dto.setStartDate(leave.getStartDate());

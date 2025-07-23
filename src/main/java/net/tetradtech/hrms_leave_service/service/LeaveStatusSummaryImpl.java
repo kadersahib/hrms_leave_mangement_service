@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class LeaveSummaryServiceReportImpl implements LeaveSummaryServiceReport {
+public class LeaveStatusSummaryImpl implements LeaveStatusSummary {
 
     @Autowired
     private LeaveApplicationRepository leaveApplicationRepository;

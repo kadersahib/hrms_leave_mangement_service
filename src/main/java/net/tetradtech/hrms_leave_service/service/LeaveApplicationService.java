@@ -1,6 +1,5 @@
 package net.tetradtech.hrms_leave_service.service;
 
-import net.tetradtech.hrms_leave_service.dto.LeaveCancelDTO;
 import net.tetradtech.hrms_leave_service.dto.LeaveRequestDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 
@@ -11,7 +10,7 @@ public interface LeaveApplicationService {
 
     LeaveApplication applyLeave(LeaveRequestDTO application);
 
-    LeaveApplication updateLeave(Long userId, LeaveApplication updatedData);
+    LeaveApplication updateLeave(Long leaveId, LeaveRequestDTO updatedData);
 
     List<LeaveApplication> getAllLeaves();//active data only
 
@@ -21,6 +20,6 @@ public interface LeaveApplicationService {
 
     void deleteLatestLeaveByUserId(Long userId);
 
-    LeaveApplication cancelLeave(LeaveCancelDTO dto);
+    LeaveApplication cancelLeave(Long userId);
 
 }

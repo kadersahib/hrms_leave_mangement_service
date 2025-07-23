@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -28,30 +29,31 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
     private static final String SYSTEM_USER = "system";
 
 
-    @Override
-    public LeaveApplication performAction(Long leaveId, LeaveApprovalDTO dto) {
-        LeaveApplication leave = leaveApplicationRepository.findByIdAndIsDeletedFalse(leaveId)
-                .orElseThrow(() -> new IllegalArgumentException("Leave not found or already deleted (ID: " + leaveId + ")"));
+    public LeaveApplication performAction(Long userId, LeaveApprovalDTO dto) {
+        // Find the latest pending leave application for the user
+        LeaveApplication leave = leaveApplicationRepository
+                .findTopByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+                .orElseThrow(() -> new IllegalArgumentException("No active leave found for user ID: " + userId));
 
         if (leave.getStatus() == LeaveStatus.CANCELLED || dto.getAction().equalsIgnoreCase("CANCELLED")) {
             throw new IllegalStateException("Cannot approve/reject a cancelled leave.");
         }
 
         LeaveStatus newStatus = LeaveStatus.valueOf(dto.getAction().toUpperCase());
+        long appliedDays = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
+
+        int year = leave.getStartDate().getYear();
+        long totalUsedDays = leaveApplicationRepository.sumApprovedLeaveDaysByUserIdAndYear(userId, year);
 
         if (newStatus == LeaveStatus.APPROVED) {
-            long requestedDays = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
-
-            LeaveTypeDTO leaveType = leaveTypeClient.getLeaveTypeById(leave.getLeaveTypeId());
-            if (leaveType == null) {
-                throw new IllegalArgumentException("Leave type not found for ID: " + leave.getLeaveTypeId());
+            if (totalUsedDays + appliedDays > 20) {
+                throw new IllegalStateException("Leave limit exceeded. Only 20  leave days allowed per year.");
             }
 
-            int maxAllowed = leaveType.getMaxDays();
-            int remaining = maxAllowed - (int) requestedDays;
-
-            leave.setRemainingDays(remaining);
+            leave.setAppliedDays((int) appliedDays);
+            leave.setRemainingDays(20 -(int) (totalUsedDays + appliedDays));
         } else {
+            leave.setAppliedDays((int) appliedDays);
             leave.setRemainingDays(null);
         }
 
@@ -64,6 +66,7 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
 
         return leaveApplicationRepository.save(leave);
     }
+
     @Override
     public LeaveApplication updateApproval(Long leaveId, LeaveApprovalDTO dto) {
         LeaveApplication leave = leaveApplicationRepository.findByIdAndIsDeletedFalse(leaveId)
@@ -74,25 +77,24 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
         }
 
         LeaveStatus newStatus = LeaveStatus.valueOf(dto.getAction().toUpperCase());
+//
+//        if (newStatus == LeaveStatus.APPROVED) {
+//            long approvedDays = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
+//
+//            LeaveTypeDTO leaveType = leaveTypeClient.getLeaveTypeById(leave.getLeaveTypeId());
+//            if (leaveType == null) {
+//                throw new IllegalArgumentException("Leave type not found for ID: " + leave.getLeaveTypeId());
+//            }
+//
+//            int maxAllowed = leaveType.getMaxDays();
+//            int remaining = maxAllowed - (int) approvedDays;
+//
+//            leave.setRemainingDays(remaining);
+//        } else {
+//            leave.setRemainingDays(null);
+//        }
 
-        if (newStatus == LeaveStatus.APPROVED) {
-            // Calculate approved days from startDate to endDate
-            long approvedDays = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
-
-            LeaveTypeDTO leaveType = leaveTypeClient.getLeaveTypeById(leave.getLeaveTypeId());
-            if (leaveType == null) {
-                throw new IllegalArgumentException("Leave type not found for ID: " + leave.getLeaveTypeId());
-            }
-
-            int maxAllowed = leaveType.getMaxDays();
-            int remaining = maxAllowed - (int) approvedDays;
-
-            leave.setRemainingDays(remaining);
-        } else {
-            leave.setRemainingDays(null);
-        }
-
-        // Update leave application directly
+        // Update leave application details
         leave.setStatus(newStatus);
         leave.setApprovalComment(dto.getComment());
         leave.setApprovedBy(dto.getPerformedBy());

@@ -2,7 +2,7 @@ package net.tetradtech.hrms_leave_service.controller;
 
 import net.tetradtech.hrms_leave_service.dto.LeaveSummaryReportDTO;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
-import net.tetradtech.hrms_leave_service.service.LeaveSummaryServiceReport;
+import net.tetradtech.hrms_leave_service.service.LeaveStatusSummary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,10 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/leave-summary")
-public class LeaveSummaryReportController {
+public class LeaveStatusSummaryController {
 
     @Autowired
-    private LeaveSummaryServiceReport leaveSummaryServiceReport;
+    private LeaveStatusSummary leaveSummaryServiceReport;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<LeaveSummaryReportDTO>> getSummaryByUser(@PathVariable Long userId) {

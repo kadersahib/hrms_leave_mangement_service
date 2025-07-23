@@ -15,19 +15,38 @@ import java.util.Optional;
 
 @Repository
 public interface LeaveApplicationRepository extends JpaRepository<LeaveApplication, Long> {
-//    Optional<LeaveApplication> // Return type: may or may not find a result
-//            findTopBy                  // "Top" means get the first record after sorting
-//    UserIdAndIsDeletedFalse    // WHERE user_id = ? AND is_deleted = false
-//    OrderByCreatedAtDesc();    // ORDER BY created_at DESC (most recent first)
+
 
     Optional<LeaveApplication> findTopByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
+    List<LeaveApplication> findAllByUserIdAndLeaveTypeNameIgnoreCaseAndIsDeletedFalse(Long userId, String leaveTypeName);
+    Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);
+    LeaveApplication findByUserIdAndLeaveTypeNameAndIsDeletedFalse(Long userId, String leaveTypeName);
     List<LeaveApplication> findByUserIdAndIsDeletedFalse(Long userId);
     List<LeaveApplication> findByIsDeletedFalse();
-    Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);
+
+    @Query("SELECT COALESCE(SUM(la.appliedDays), 0) FROM LeaveApplication la " +
+            "WHERE la.userId = :userId AND la.status = 'APPROVED' " +
+            "AND YEAR(la.startDate) = :year AND la.isDeleted = false")
+    long sumApprovedLeaveDaysByUserIdAndYear(@Param("userId") Long userId,
+                                             @Param("year") int year);
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);
 
     //status validation
     List<LeaveApplication> findByStatusAndIsDeletedFalse(LeaveStatus status);
-    List<LeaveApplication> findByLeaveTypeIdAndIsDeletedFalse(Long leaveTypeId);
+//    List<LeaveApplication> findByLeaveTypeIdAndIsDeletedFalse(Long leaveTypeId);
     List<LeaveApplication> findByUserIdAndStatusAndIsDeletedFalse(Long userId, LeaveStatus status);
     boolean existsByUserIdAndIsDeletedFalse(Long userId);
     List<LeaveApplication> findByUserIdAndStartDateGreaterThanEqualAndEndDateLessThanEqualAndIsDeletedFalse(
@@ -36,22 +55,22 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
             LocalDate endDate
     );
 
-    List<LeaveApplication> findByUserIdAndLeaveTypeIdAndIsDeletedFalse(Long userId, Long leaveTypeId);
-    Optional<LeaveApplication> findByUserIdAndLeaveTypeId(Long userId, Long leaveTypeId);
-
-
-    @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId AND l.status = 'APPROVED' AND l.startDate <= :end AND l.endDate >= :start")
-    List<LeaveApplication> findApprovedLeavesByUserIdAndDateRange(Long userId, LocalDate start, LocalDate end);
-
-
-    List<LeaveApplication> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
-
-    @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId " +
-            "AND :today BETWEEN l.startDate AND l.endDate " +
-            "AND l.status = :status " +
-            "AND l.isDeleted = false")
-    List<LeaveApplication> findApprovedLeavesForToday(@Param("userId") Long userId,
-                                                      @Param("today") LocalDate today,
-                                                      @Param("status") LeaveStatus status);
+//    List<LeaveApplication> findByUserIdAndLeaveTypeIdAndIsDeletedFalse(Long userId, Long leaveTypeId);
+//    Optional<LeaveApplication> findByUserIdAndLeaveTypeId(Long userId, Long leaveTypeId);
+//
+//
+//    @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId AND l.status = 'APPROVED' AND l.startDate <= :end AND l.endDate >= :start")
+//    List<LeaveApplication> findApprovedLeavesByUserIdAndDateRange(Long userId, LocalDate start, LocalDate end);
+//
+//
+//    List<LeaveApplication> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
+//
+//    @Query("SELECT l FROM LeaveApplication l WHERE l.userId = :userId " +
+//            "AND :today BETWEEN l.startDate AND l.endDate " +
+//            "AND l.status = :status " +
+//            "AND l.isDeleted = false")
+//    List<LeaveApplication> findApprovedLeavesForToday(@Param("userId") Long userId,
+//                                                      @Param("today") LocalDate today,
+//                                                      @Param("status") LeaveStatus status);
 
 }

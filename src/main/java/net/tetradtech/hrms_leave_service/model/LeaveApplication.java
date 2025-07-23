@@ -29,9 +29,9 @@ public class LeaveApplication {
     @Column(name = "userId", nullable = false)
     private Long userId;
 
-    @NotNull(message = "Leave type ID is required")
-    @Column(name = "leaveTypeId", nullable = false)
-    private Long leaveTypeId;
+
+    @Column(name = "leave_type_name")
+    private String leaveTypeName;
 
     @NotNull(message = "Start date is required")
     @Column(name = "startDate")
@@ -64,6 +64,9 @@ public class LeaveApplication {
     @Column(name = "remainingDays")
     private Integer remainingDays;
 
+    @Column(name = "total_leave_apply")
+    private Integer totalLeaveApply;
+
     @Column(name = "approvalComment")
     private String approvalComment;
 
@@ -74,21 +77,22 @@ public class LeaveApplication {
     private LocalDateTime approvalTimestamp;
 
 
-    //  New Summary Fields
-    @Column(name = "total_applied")
-    private Integer totalApplied;
 
-    @Column(name = "approved_count")
-    private Integer approvedCount;
-
-    @Column(name = "rejected_count")
-    private Integer rejectedCount;
-
-    @Column(name = "pending_count")
-    private Integer pendingCount;
-
-    @Column(name = "cancelled_count")
-    private Integer cancelledCount;
+//    //  New Summary Fields
+//    @Column(name = "total_applied")
+//    private Integer totalApplied;
+//
+//    @Column(name = "approved_count")
+//    private Integer approvedCount;
+//
+//    @Column(name = "rejected_count")
+//    private Integer rejectedCount;
+//
+//    @Column(name = "pending_count")
+//    private Integer pendingCount;
+//
+//    @Column(name = "cancelled_count")
+//    private Integer cancelledCount;
 
 
     @Column(name = "cancelledBy")
