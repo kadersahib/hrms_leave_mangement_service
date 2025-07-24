@@ -2,10 +2,8 @@
 package net.tetradtech.hrms_leave_service.repository;
 
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
-import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
+import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -17,18 +15,13 @@ import java.util.Optional;
 public interface LeaveApplicationRepository extends JpaRepository<LeaveApplication, Long> {
 
 
-    Optional<LeaveApplication> findTopByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
-    List<LeaveApplication> findAllByUserIdAndLeaveTypeNameIgnoreCaseAndIsDeletedFalse(Long userId, String leaveTypeName);
     Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);
+    Optional<LeaveApplication> findByUserIdAndLeaveTypeNameIgnoreCaseAndIsDeletedFalse(Long userId, String leaveTypeName);
+
     LeaveApplication findByUserIdAndLeaveTypeNameAndIsDeletedFalse(Long userId, String leaveTypeName);
     List<LeaveApplication> findByUserIdAndIsDeletedFalse(Long userId);
     List<LeaveApplication> findByIsDeletedFalse();
-
-    @Query("SELECT COALESCE(SUM(la.appliedDays), 0) FROM LeaveApplication la " +
-            "WHERE la.userId = :userId AND la.status = 'APPROVED' " +
-            "AND YEAR(la.startDate) = :year AND la.isDeleted = false")
-    long sumApprovedLeaveDaysByUserIdAndYear(@Param("userId") Long userId,
-                                             @Param("year") int year);
+    List<LeaveApplication> findAllByUserIdAndIsDeletedFalse(Long userId);
 
 
 
@@ -37,9 +30,11 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
 
 
-
-
-
+//    @Query("SELECT COALESCE(SUM(la.appliedDays), 0) FROM LeaveApplication la " +
+//            "WHERE la.userId = :userId AND la.status = 'APPROVED' " +
+//            "AND YEAR(la.startDate) = :year AND la.isDeleted = false")
+//    long sumApprovedLeaveDaysByUserIdAndYear(@Param("userId") Long userId,
+//                                             @Param("year") int year);
 
 
 //    Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);

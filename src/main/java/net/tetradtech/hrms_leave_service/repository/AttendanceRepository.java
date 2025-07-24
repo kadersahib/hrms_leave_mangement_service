@@ -1,6 +1,6 @@
 package net.tetradtech.hrms_leave_service.repository;
 
-import net.tetradtech.hrms_leave_service.Enum.AttendanceStatus;
+import net.tetradtech.hrms_leave_service.constants.AttendanceStatus;
 import net.tetradtech.hrms_leave_service.model.AttendanceRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

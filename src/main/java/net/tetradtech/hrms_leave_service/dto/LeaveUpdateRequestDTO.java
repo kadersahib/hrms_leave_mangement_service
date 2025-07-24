@@ -7,14 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LeaveRequestDTO {
+public class LeaveUpdateRequestDTO {
 
-//    private Long id;
+    private Long id;
 
-    private Long userId;
     private String leaveTypeName;
 
     @NotNull(message = "Start date is required")

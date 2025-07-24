@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.tetradtech.hrms_leave_service.Enum.AttendanceSource;
-import net.tetradtech.hrms_leave_service.Enum.AttendanceStatus;
+import net.tetradtech.hrms_leave_service.constants.AttendanceSource;
+import net.tetradtech.hrms_leave_service.constants.AttendanceStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

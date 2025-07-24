@@ -1,4 +1,4 @@
-package net.tetradtech.hrms_leave_service.Enum;
+package net.tetradtech.hrms_leave_service.constants;
 
 public enum DayOffType {
     LEAVE, FIRSTOFF, SECONDOFF;

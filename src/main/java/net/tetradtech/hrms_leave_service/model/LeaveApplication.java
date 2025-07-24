@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
-import net.tetradtech.hrms_leave_service.Enum.DayOffType;
-import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
+import net.tetradtech.hrms_leave_service.constants.DayOffType;
+import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,7 +26,7 @@ public class LeaveApplication {
 
 
     @NotNull(message = "User ID is required")
-    @Column(name = "userId", nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
 
@@ -34,11 +34,11 @@ public class LeaveApplication {
     private String leaveTypeName;
 
     @NotNull(message = "Start date is required")
-    @Column(name = "startDate")
+    @Column(name = "start_date")
     private LocalDate startDate;
 
     @NotNull(message = "End date is required")
-    @Column(name = "endDate")
+    @Column(name = "end_date")
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
@@ -49,36 +49,48 @@ public class LeaveApplication {
     @Column(name = "dayoff")
     private DayOffType dayOffType;
 
-    @Column(name = "reportingManger")
+    @Column(name = "reporting_manger")
     private String reportingManager;
 
-    @Column(name = "maxDays")
+    @Column(name = "max_days")
     private int maxDays;
 
-    @Column(name = "appliedDays")
-    private int appliedDays;
+    @Column(name = "total_applied_days")
+    private int totalAppliedDays;
 
-    @Column(name = "isActive")
+    @Column(name = "is_active")
     private Boolean active = true;
 
-    @Column(name = "remainingDays")
+    @Column(name = "remaining_days")
     private Integer remainingDays;
 
-    @Column(name = "total_leave_apply")
-    private Integer totalLeaveApply;
+    @Column(name = "total_count")
+    private Integer totalCount;
 
-    @Column(name = "approvalComment")
-    private String approvalComment;
+    @Column(name = "applied_date")
+    private LocalDateTime appliedDate;
 
-    @Column(name = "approveBy")
-    private String approvedBy;
+    @Column(name = "document_path")
+    private String documentPath;
 
-    @Column(name = "approvalTime")
-    private LocalDateTime approvalTimestamp;
+    @Column(name = "document_name")
+    private String documentName;
+
+    private LocalDateTime documentUploadedAt;
 
 
 
-//    //  New Summary Fields
+//    @Column(name = "approvalComment")
+//    private String approvalComment;
+//
+//    @Column(name = "approveBy")
+//    private String approvedBy;
+//
+//    @Column(name = "approvalTime")
+//    private LocalDateTime approvalTimestamp;
+
+
+
 //    @Column(name = "total_applied")
 //    private Integer totalApplied;
 //
