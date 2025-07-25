@@ -1,8 +1,6 @@
 package net.tetradtech.hrms_leave_service.controller;
 
-import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.LeaveBalanceDTO;
-import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveBalanceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,13 +46,13 @@ public class LeaveBalanceController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<LeaveBalanceDTO>>> getLeaveBalance(
             @RequestParam Long userId,
-            @RequestParam String leaveTypeName) {
+            @RequestParam Long leaveTypeId) {
 
-        List<LeaveBalanceDTO> balance = leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(userId, leaveTypeName);
+        List<LeaveBalanceDTO> balance = leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(userId, leaveTypeId);
 
         if (balance.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    new ApiResponse<>("error", "No leave balance found for userId " + userId + " and type " + leaveTypeName, null)
+                    new ApiResponse<>("error", "No leave balance found for userId " + userId + " and type " + leaveTypeId, null)
             );
         }
         return ResponseEntity.ok(new ApiResponse<>("success", "Leave balance fetched successfully", balance));

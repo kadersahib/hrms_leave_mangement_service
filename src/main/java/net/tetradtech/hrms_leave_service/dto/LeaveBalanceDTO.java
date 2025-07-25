@@ -11,11 +11,8 @@ import lombok.NoArgsConstructor;
 public class LeaveBalanceDTO {
     private String name;
     private Long userId;
-    private String leaveTypeName;
-    private int maxDays;
-    private int remainingDays;
+    private Long leaveId;
+    private Integer remainingDays;
     private int totalAppliedDays;
-    private int totalCount;
-
 
 }

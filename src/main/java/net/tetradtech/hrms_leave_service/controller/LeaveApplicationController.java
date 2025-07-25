@@ -8,6 +8,7 @@ import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveApplicationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,24 +33,22 @@ public class LeaveApplicationController {
         }
     }
 
-    @PutMapping("/update")
+    @PutMapping("/update/{id}")
     public ResponseEntity<ApiResponse<LeaveApplication>> updateLeave(
+            @PathVariable Long id,
             @Valid @RequestBody LeaveUpdateRequestDTO updatedData) {
-        try {
-            if (updatedData.getId() == null) {
-                return ResponseEntity.badRequest().body(
-                        new ApiResponse<>("error", "User ID is required in the request body", null)
-                );
-            }
-            LeaveApplication updated = leaveApplicationService.updateLeave(updatedData.getId(), updatedData);
-            int remainingDays = updated.getMaxDays() - updated.getTotalAppliedDays();
-            String message = "Leave updated successfully. Remaining days: " + remainingDays;
 
-            return ResponseEntity.ok(new ApiResponse<>("success", message, updated));
-        } catch (IllegalArgumentException e) {
+        try {
+            LeaveApplication updatedLeave = leaveApplicationService.updateLeave(id, updatedData);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Leave updated successfully", updatedLeave));
+        } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>("error", "An unexpected error occurred", null));
         }
     }
+
 
 
     @GetMapping("/all")

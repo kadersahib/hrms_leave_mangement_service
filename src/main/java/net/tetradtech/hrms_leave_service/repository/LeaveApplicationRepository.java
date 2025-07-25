@@ -16,14 +16,11 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
 
     Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);
-    Optional<LeaveApplication> findByUserIdAndLeaveTypeNameIgnoreCaseAndIsDeletedFalse(Long userId, String leaveTypeName);
 
-    LeaveApplication findByUserIdAndLeaveTypeNameAndIsDeletedFalse(Long userId, String leaveTypeName);
+    List<LeaveApplication> findByUserIdAndLeaveTypeIdAndIsDeletedFalse(Long userId, Long leaveTypeId);
     List<LeaveApplication> findByUserIdAndIsDeletedFalse(Long userId);
     List<LeaveApplication> findByIsDeletedFalse();
     List<LeaveApplication> findAllByUserIdAndIsDeletedFalse(Long userId);
-
-
 
 
 

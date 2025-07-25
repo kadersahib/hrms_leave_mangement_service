@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -28,67 +29,71 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
     private UserServiceClient userServiceClient;
 
     @Override
-    public void applyLeave(Long userId, String leaveTypeName, LocalDate startDate, LocalDate endDate, MultipartFile file) {
-        // 1. Validate user
+    public LeaveApplication applyLeave(Long userId, Long leaveTypeId, LocalDate startDate, LocalDate endDate, MultipartFile file) {
         UserDTO user = userServiceClient.getUserById(userId);
         if (user == null) {
             throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
         }
 
+        String leaveTypeName;
 
-        // 2. Validate gender vs leave type
-        if (LeaveTypeConstants.MATERNITY.equalsIgnoreCase(leaveTypeName) && !"FEMALE".equalsIgnoreCase(user.getGender())) {
-            throw new IllegalArgumentException("Maternity leave only applicable to female users.");
+        if (leaveTypeId == 3L) {
+            leaveTypeName = LeaveTypeConstants.MATERNITY;
+            if (!"FEMALE".equalsIgnoreCase(user.getGender())) {
+                throw new IllegalArgumentException("Maternity leave only applicable to female users.");
+            }
+        } else if (leaveTypeId == 4L) {
+            leaveTypeName = LeaveTypeConstants.PATERNITY;
+            if (!"MALE".equalsIgnoreCase(user.getGender())) {
+                throw new IllegalArgumentException("Paternity leave only applicable to male users.");
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid leaveTypeId: " + leaveTypeId);
         }
 
-        if (LeaveTypeConstants.PATERNITY.equalsIgnoreCase(leaveTypeName) && !"MALE".equalsIgnoreCase(user.getGender())) {
-            throw new IllegalArgumentException("Paternity leave only applicable to male users.");
-        }
-
-        // 3. Calculate duration
         long leaveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-        if (LeaveTypeConstants.MATERNITY.equalsIgnoreCase(leaveTypeName) && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
-            throw new IllegalArgumentException("Maternity leave cannot exceed 80 days.");
-        }
 
-        if (LeaveTypeConstants.PATERNITY.equalsIgnoreCase(leaveTypeName) && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
+        if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
+            throw new IllegalArgumentException("Maternity leave cannot exceed 100 days.");
+        }
+        if (leaveTypeId == 4L && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
             throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
         }
 
-        if (!LeaveTypeConstants.MATERNITY.equalsIgnoreCase(leaveTypeName) && !LeaveTypeConstants.PATERNITY.equalsIgnoreCase(leaveTypeName)) {
-            throw new IllegalArgumentException("Invalid leave type: " + leaveTypeName);
-        }
 
-
-        // 4. Save file (if provided)
-        String filePath = null;
-        String fileName = null;
-        LocalDateTime uploadedAt = null;
-
+        // Save document
+        String documentName = null;
+        byte[] documentData = null;
         if (file != null && !file.isEmpty()) {
-            fileName = file.getOriginalFilename();
-            filePath = fileStorageService.saveFile(file);
-            uploadedAt = LocalDateTime.now();
+            documentName = file.getOriginalFilename();
+            try {
+                documentData = file.getBytes();  // Save bytes to DB
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read file", e);
+            }
         }
 
-        // 5. Calculate applied days
-        int appliedDays = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
-
-        // 6. Save LeaveApplication
         LeaveApplication leave = new LeaveApplication();
         leave.setUserId(userId);
-        leave.setLeaveTypeName(leaveTypeName);
+        leave.setLeaveTypeId(leaveTypeId);
         leave.setStartDate(startDate);
         leave.setEndDate(endDate);
-        leave.setAppliedDate(LocalDateTime.now());
-        leave.setStatus(LeaveStatus.PENDING); // default
-        leave.setTotalAppliedDays(appliedDays);
-        leave.setDocumentPath(filePath);
-        leave.setDocumentName(fileName);
-        leave.setDocumentUploadedAt(uploadedAt);
-        leave.setActive(true);
+        leave.setAppliedDays((int) leaveDays);
+        leave.setTotalAppliedDays((int) leaveDays);
+        leave.setStatus(LeaveStatus.PENDING);
+        leave.setDocumentName(documentName);
+        leave.setDocumentData(documentData);
+        leave.setCreatedAt(LocalDateTime.now());
 
-        leaveRepository.save(leave);
+        String userIdString = String.valueOf(leave.getUserId());
+        leave.setCreatedBy(userIdString);
+
+        LeaveApplication saved = leaveRepository.save(leave);
+
+        // Generate virtual download path using the saved ID
+        saved.setDocumentPath("/api/leaveDocument/download/" + saved.getId());
+        return leaveRepository.save(saved); // Save again with documentPath
+
     }
 }
 

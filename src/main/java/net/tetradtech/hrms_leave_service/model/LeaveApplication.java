@@ -24,14 +24,15 @@ public class LeaveApplication {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @NotNull(message = "User ID is required")
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "leaveid")
+    private Long leaveTypeId;
 
-    @Column(name = "leave_type_name")
-    private String leaveTypeName;
+    @Column(name = "reportingTo")
+    private Long reportingId;
 
     @NotNull(message = "Start date is required")
     @Column(name = "start_date")
@@ -41,6 +42,9 @@ public class LeaveApplication {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Column(name = "applied_days")
+    private Integer appliedDays;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private LeaveStatus status;
@@ -49,26 +53,11 @@ public class LeaveApplication {
     @Column(name = "dayoff")
     private DayOffType dayOffType;
 
-    @Column(name = "reporting_manger")
-    private String reportingManager;
-
-    @Column(name = "max_days")
-    private int maxDays;
-
-    @Column(name = "total_applied_days")
+    @Column(name = "total_days")
     private int totalAppliedDays;
-
-    @Column(name = "is_active")
-    private Boolean active = true;
 
     @Column(name = "remaining_days")
     private Integer remainingDays;
-
-    @Column(name = "total_count")
-    private Integer totalCount;
-
-    @Column(name = "applied_date")
-    private LocalDateTime appliedDate;
 
     @Column(name = "document_path")
     private String documentPath;
@@ -76,7 +65,9 @@ public class LeaveApplication {
     @Column(name = "document_name")
     private String documentName;
 
-    private LocalDateTime documentUploadedAt;
+    @Lob
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] documentData;
 
 
 
@@ -107,11 +98,6 @@ public class LeaveApplication {
 //    private Integer cancelledCount;
 
 
-    @Column(name = "cancelledBy")
-    private String cancelledBy;
-
-    @Column(name = "cancelledAt")
-    private LocalDateTime cancelledAt;
 
     // Audit fields
     @Column(name = "createdAt")

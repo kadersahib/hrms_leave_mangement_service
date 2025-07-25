@@ -12,10 +12,11 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class LeaveRequestDTO {
 
-//    private Long id;
-
+    @NotNull(message = "userId is required")
     private Long userId;
-    private String leaveTypeName;
+
+    @NotNull(message = "leaveId is required")
+    private Long leaveId;
 
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
@@ -23,7 +24,7 @@ public class LeaveRequestDTO {
     @NotNull(message = "End date is required")
     private LocalDate endDate;
 
-    private String reportingManager;
+    private Long reportingId;
 
     @NotNull(message = "Leave day type is required")
     private String DayOffType;
