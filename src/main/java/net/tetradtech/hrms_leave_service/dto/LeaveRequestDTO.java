@@ -27,5 +27,5 @@ public class LeaveRequestDTO {
     private Long reportingId;
 
     @NotNull(message = "Leave day type is required")
-    private String DayOffType;
+    private String dayOffType;
 }

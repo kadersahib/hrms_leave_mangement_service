@@ -11,8 +11,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeaveDocDTO {
+
     private Long userId;
     private Long leaveTypeId;
+    private String dayOffType;
+    private Long reportingId;
     private LocalDate startDate;
     private LocalDate endDate;
     private String documentPath;

@@ -1,5 +1,6 @@
 package net.tetradtech.hrms_leave_service.service;
 
+import net.tetradtech.hrms_leave_service.constants.DayOffType;
 import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.constants.LeaveTypeConstants;
@@ -29,7 +30,7 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
     private UserServiceClient userServiceClient;
 
     @Override
-    public LeaveApplication applyLeave(Long userId, Long leaveTypeId, LocalDate startDate, LocalDate endDate, MultipartFile file) {
+    public LeaveApplication applyLeave(Long userId, Long leaveTypeId,DayOffType dayOffType,Long reportingId, LocalDate startDate, LocalDate endDate, MultipartFile file) {
         UserDTO user = userServiceClient.getUserById(userId);
         if (user == null) {
             throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
@@ -76,6 +77,8 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
         LeaveApplication leave = new LeaveApplication();
         leave.setUserId(userId);
         leave.setLeaveTypeId(leaveTypeId);
+        leave.setReportingId(reportingId);
+        leave.setDayOffType(DayOffType.LEAVE);
         leave.setStartDate(startDate);
         leave.setEndDate(endDate);
         leave.setAppliedDays((int) leaveDays);
@@ -93,7 +96,38 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
         // Generate virtual download path using the saved ID
         saved.setDocumentPath("/api/leaveDocument/download/" + saved.getId());
         return leaveRepository.save(saved); // Save again with documentPath
-
     }
+
+
+    @Override
+    public LeaveApplication updateLeave(Long leaveId, Long userId, Long leaveTypeId,
+                                        DayOffType dayOffType, Long reportingId,
+                                        LocalDate startDate, LocalDate endDate, MultipartFile file) {
+        LeaveApplication leave = leaveRepository.findById(leaveId)
+                .orElseThrow(() -> new RuntimeException("Leave not found with ID: " + leaveId));
+
+        leave.setUserId(userId);
+        leave.setLeaveTypeId(leaveTypeId);
+        leave.setStartDate(startDate);
+        leave.setEndDate(endDate);
+        leave.setAppliedDays((int) (ChronoUnit.DAYS.between(startDate, endDate) + 1));
+        leave.setTotalAppliedDays((int) (ChronoUnit.DAYS.between(startDate, endDate) + 1));
+        leave.setReportingId(reportingId);
+        leave.setDayOffType(DayOffType.LEAVE);
+
+        if (file != null && !file.isEmpty()) {
+            leave.setDocumentName(file.getOriginalFilename());
+            try {
+                leave.setDocumentData(file.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            leave.setDocumentPath("/api/leaveDocument/download/" + leaveId);
+        }
+
+        leave.setUpdatedAt(LocalDateTime.now());
+        return leaveRepository.save(leave);
+    }
+
 }
 

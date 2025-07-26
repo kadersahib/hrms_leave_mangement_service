@@ -4,7 +4,11 @@ public enum DayOffType {
     LEAVE, FIRSTOFF, SECONDOFF;
 
     public static DayOffType fromString(String value) {
-        return DayOffType.valueOf(value.toUpperCase());
+        if (value == null) return null;
+        try {
+            return DayOffType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid DayOffType: " + value);
+        }
     }
 }
-
