@@ -4,6 +4,8 @@ package net.tetradtech.hrms_leave_service.repository;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -23,15 +25,8 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
     List<LeaveApplication> findAllByUserIdAndIsDeletedFalse(Long userId);
 
 
-
-
-
-
-//    @Query("SELECT COALESCE(SUM(la.appliedDays), 0) FROM LeaveApplication la " +
-//            "WHERE la.userId = :userId AND la.status = 'APPROVED' " +
-//            "AND YEAR(la.startDate) = :year AND la.isDeleted = false")
-//    long sumApprovedLeaveDaysByUserIdAndYear(@Param("userId") Long userId,
-//                                             @Param("year") int year);
+    boolean existsByUserIdAndLeaveTypeIdAndStartDateBetween(
+            Long userId, Long leaveTypeId, LocalDate start, LocalDate end);
 
 
 //    Optional<LeaveApplication> findByIdAndIsDeletedFalse(Long id);

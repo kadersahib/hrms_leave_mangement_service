@@ -7,7 +7,6 @@ import net.tetradtech.hrms_leave_service.constants.LeaveTypeConstants;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
-import net.tetradtech.hrms_leave_service.storage.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,13 +17,10 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 @Service
-public class LeaveDocumentServiceImpl implements LeaveDocumentService {
+public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPaternityLeaveService {
 
     @Autowired
     private LeaveApplicationRepository leaveRepository;
-
-    @Autowired
-    private FileStorageService fileStorageService;
 
     @Autowired
     private UserServiceClient userServiceClient;
@@ -52,6 +48,17 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
             throw new IllegalArgumentException("Invalid leaveTypeId: " + leaveTypeId);
         }
 
+        int leaveYear = startDate.getYear();
+        boolean alreadyApplied = leaveRepository.existsByUserIdAndLeaveTypeIdAndStartDateBetween(
+                userId, leaveTypeId,
+                LocalDate.of(leaveYear, 1, 1),
+                LocalDate.of(leaveYear, 12, 31)
+        );
+
+        if (alreadyApplied) {
+            throw new IllegalArgumentException(leaveTypeName + " leave already applied for year " + leaveYear);
+        }
+
         long leaveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
 
         if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
@@ -60,7 +67,6 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
         if (leaveTypeId == 4L && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
             throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
         }
-
 
         // Save document
         String documentName = null;
@@ -93,7 +99,6 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
 
         LeaveApplication saved = leaveRepository.save(leave);
 
-        // Generate virtual download path using the saved ID
         saved.setDocumentPath("/api/leaveDocument/download/" + saved.getId());
         return leaveRepository.save(saved); // Save again with documentPath
     }
@@ -103,30 +108,48 @@ public class LeaveDocumentServiceImpl implements LeaveDocumentService {
     public LeaveApplication updateLeave(Long leaveId, Long userId, Long leaveTypeId,
                                         DayOffType dayOffType, Long reportingId,
                                         LocalDate startDate, LocalDate endDate, MultipartFile file) {
-        LeaveApplication leave = leaveRepository.findById(leaveId)
+        LeaveApplication existing = leaveRepository.findById(leaveId)
                 .orElseThrow(() -> new RuntimeException("Leave not found with ID: " + leaveId));
 
-        leave.setUserId(userId);
-        leave.setLeaveTypeId(leaveTypeId);
-        leave.setStartDate(startDate);
-        leave.setEndDate(endDate);
-        leave.setAppliedDays((int) (ChronoUnit.DAYS.between(startDate, endDate) + 1));
-        leave.setTotalAppliedDays((int) (ChronoUnit.DAYS.between(startDate, endDate) + 1));
-        leave.setReportingId(reportingId);
-        leave.setDayOffType(DayOffType.LEAVE);
+        if (!LeaveStatus.PENDING.equals(existing.getStatus())) {
+            throw new IllegalArgumentException("Only PENDING leaves can be updated.");
+        }
+
+        long leaveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+
+        if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
+            throw new IllegalArgumentException("Maternity leave cannot exceed 100 days.");
+        }
+        if (leaveTypeId == 4L && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
+            throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
+        }
+
+        int currentYear = LocalDate.now().getYear();
+        if (existing.getStartDate().getYear() != currentYear) {
+            throw new IllegalArgumentException("Only current year leaves can be updated.");
+        }
+
+        existing.setUserId(userId);
+        existing.setLeaveTypeId(leaveTypeId);
+        existing.setStartDate(startDate);
+        existing.setEndDate(endDate);
+        existing.setAppliedDays((int) leaveDays);
+        existing.setTotalAppliedDays((int) leaveDays);
+        existing.setReportingId(reportingId);
+        existing.setDayOffType(DayOffType.LEAVE);
 
         if (file != null && !file.isEmpty()) {
-            leave.setDocumentName(file.getOriginalFilename());
+            existing.setDocumentName(file.getOriginalFilename());
             try {
-                leave.setDocumentData(file.getBytes());
+                existing.setDocumentData(file.getBytes());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            leave.setDocumentPath("/api/leaveDocument/download/" + leaveId);
+            existing.setDocumentPath("/api/leaveDocument/download/" + leaveId);
         }
 
-        leave.setUpdatedAt(LocalDateTime.now());
-        return leaveRepository.save(leave);
+        existing.setUpdatedAt(LocalDateTime.now());
+        return leaveRepository.save(existing);
     }
 
 }

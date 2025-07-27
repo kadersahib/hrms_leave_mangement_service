@@ -18,6 +18,5 @@ public class LeaveDocDTO {
     private Long reportingId;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String documentPath;
     private String documentName;
 }
