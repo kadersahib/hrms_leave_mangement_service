@@ -14,9 +14,9 @@ public interface LeaveApplicationService {
 
     List<LeaveApplication> getAllLeaves();
 
-    List<LeaveApplication> getLeavesByUserId(Long userId);
+    List<LeaveApplication> getLeavesById(Long Id);
 
-    void deleteLatestLeaveByUserId(Long userId);
+    void deleteById(Long Id);
 
     LeaveApplication cancelLeave(Long userId);
 

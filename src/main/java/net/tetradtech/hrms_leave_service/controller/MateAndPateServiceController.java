@@ -6,7 +6,7 @@ import net.tetradtech.hrms_leave_service.dto.LeaveDocDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
-import net.tetradtech.hrms_leave_service.service.MaternityAndPaternityLeaveService;
+import net.tetradtech.hrms_leave_service.service.MateAndPateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
@@ -18,10 +18,10 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/leaveDocument")
-public class MaternityAndPaternityController {
+public class MateAndPateServiceController {
 
     @Autowired
-    private MaternityAndPaternityLeaveService leaveDocumentService;
+    private MateAndPateService leaveDocumentService;
 
     @Autowired
     private LeaveApplicationRepository leaveApplicationRepository;
@@ -42,6 +42,7 @@ public class MaternityAndPaternityController {
         LeaveApplication leave = leaveDocumentService.applyLeave(userId, leaveTypeId,dayOff,reportingId, startDate, endDate, file);
 
         LeaveDocDTO dto = new LeaveDocDTO();
+        dto.setId(leave.getId());
         dto.setUserId(leave.getUserId());
         dto.setLeaveTypeId(leave.getLeaveTypeId());
         dto.setDayOffType(leave.getDayOffType().name());
@@ -68,6 +69,7 @@ public class MaternityAndPaternityController {
         LeaveApplication leave = leaveDocumentService.updateLeave(leaveId, userId, leaveTypeId, dayOff, reportingId, startDate, endDate, file);
 
         LeaveDocDTO dto = new LeaveDocDTO();
+        dto.setId(leave.getId());
         dto.setUserId(leave.getUserId());
         dto.setLeaveTypeId(leave.getLeaveTypeId());
         dto.setDayOffType(leave.getDayOffType().name());

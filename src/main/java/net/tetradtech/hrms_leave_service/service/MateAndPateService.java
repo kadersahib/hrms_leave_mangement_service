@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
-public interface MaternityAndPaternityLeaveService {
+public interface MateAndPateService {
     LeaveApplication applyLeave(
             Long userId, Long leaveTypeId, DayOffType dayOffType,
             Long reportingId, LocalDate startDate, LocalDate endDate,

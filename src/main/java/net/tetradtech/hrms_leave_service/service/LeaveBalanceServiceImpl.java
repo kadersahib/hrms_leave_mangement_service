@@ -31,11 +31,12 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
             UserDTO user = userServiceClient.getUserById(leave.getUserId());
 
             return new LeaveBalanceDTO(
+                    leave.getId(),
                     user.getName(),
                     leave.getUserId(),
                     leave.getLeaveTypeId(),
                     leave.getRemainingDays(),
-                    leave.getTotalAppliedDays()
+                    leave.getTotalLeaveDays()
             );
         }).collect(Collectors.toList());
     }
@@ -49,11 +50,12 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
         List<LeaveApplication> leaves = leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId);
 
         return leaves.stream().map(leave -> new LeaveBalanceDTO(
+                leave.getId(),
                 user.getName(),
                 leave.getUserId(),
                 leave.getLeaveTypeId(),
                 leave.getRemainingDays(),
-                leave.getTotalAppliedDays()
+                leave.getTotalLeaveDays()
         )).collect(Collectors.toList());
     }
 
@@ -83,11 +85,12 @@ public class LeaveBalanceServiceImpl implements LeaveBalanceService {
 
     private LeaveBalanceDTO convertToLeaveBalanceDTO(LeaveApplication leave, UserDTO user) {
         LeaveBalanceDTO dto = new LeaveBalanceDTO();
+        dto.setId(leave.getId());
         dto.setUserId(leave.getUserId());
         dto.setName(user.getName());
         dto.setLeaveId(leave.getLeaveTypeId());
         dto.setRemainingDays(leave.getRemainingDays());
-        dto.setTotalAppliedDays(leave.getTotalAppliedDays());
+        dto.setTotalAppliedDays(leave.getTotalLeaveDays());
         return dto;
     }
 

@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 @Service
-public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPaternityLeaveService {
+public class MateAndPateServiceImpl implements MateAndPateService {
 
     @Autowired
     private LeaveApplicationRepository leaveRepository;
@@ -59,7 +59,7 @@ public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPatern
             throw new IllegalArgumentException(leaveTypeName + " leave already applied for year " + leaveYear);
         }
 
-        long leaveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        int leaveDays = calculateWorkingDays(startDate, endDate);
 
         if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
             throw new IllegalArgumentException("Maternity leave cannot exceed 100 days.");
@@ -67,17 +67,18 @@ public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPatern
         if (leaveTypeId == 4L && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
             throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
         }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Document is required for applying " + leaveTypeId + " leave.");
+        }
 
         // Save document
-        String documentName = null;
-        byte[] documentData = null;
-        if (file != null && !file.isEmpty()) {
+        String documentName;
+        byte[] documentData;
+        try {
             documentName = file.getOriginalFilename();
-            try {
-                documentData = file.getBytes();  // Save bytes to DB
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to read file", e);
-            }
+            documentData = file.getBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file", e);
         }
 
         LeaveApplication leave = new LeaveApplication();
@@ -87,8 +88,8 @@ public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPatern
         leave.setDayOffType(DayOffType.LEAVE);
         leave.setStartDate(startDate);
         leave.setEndDate(endDate);
-        leave.setAppliedDays((int) leaveDays);
-        leave.setTotalAppliedDays((int) leaveDays);
+        leave.setAppliedDays( leaveDays);
+        leave.setTotalLeaveDays(leaveDays);
         leave.setStatus(LeaveStatus.PENDING);
         leave.setDocumentName(documentName);
         leave.setDocumentData(documentData);
@@ -100,7 +101,7 @@ public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPatern
         LeaveApplication saved = leaveRepository.save(leave);
 
         saved.setDocumentPath("/api/leaveDocument/download/" + saved.getId());
-        return leaveRepository.save(saved); // Save again with documentPath
+        return leaveRepository.save(saved);
     }
 
 
@@ -115,7 +116,7 @@ public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPatern
             throw new IllegalArgumentException("Only PENDING leaves can be updated.");
         }
 
-        long leaveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        int leaveDays = calculateWorkingDays(startDate, endDate);
 
         if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
             throw new IllegalArgumentException("Maternity leave cannot exceed 100 days.");
@@ -129,28 +130,44 @@ public class MaternityAndPaternityLeaveServiceImpl implements MaternityAndPatern
             throw new IllegalArgumentException("Only current year leaves can be updated.");
         }
 
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Document is required when updating leave.");
+        }
+
         existing.setUserId(userId);
         existing.setLeaveTypeId(leaveTypeId);
         existing.setStartDate(startDate);
         existing.setEndDate(endDate);
-        existing.setAppliedDays((int) leaveDays);
-        existing.setTotalAppliedDays((int) leaveDays);
+        existing.setAppliedDays(leaveDays);
+        existing.setTotalLeaveDays(leaveDays);
         existing.setReportingId(reportingId);
         existing.setDayOffType(DayOffType.LEAVE);
 
-        if (file != null && !file.isEmpty()) {
-            existing.setDocumentName(file.getOriginalFilename());
-            try {
-                existing.setDocumentData(file.getBytes());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            existing.setDocumentPath("/api/leaveDocument/download/" + leaveId);
+        existing.setDocumentName(file.getOriginalFilename());
+        try {
+            existing.setDocumentData(file.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file", e);
         }
+        existing.setDocumentPath("/api/leaveDocument/download/" + leaveId);
 
         existing.setUpdatedAt(LocalDateTime.now());
         return leaveRepository.save(existing);
     }
+
+    private int calculateWorkingDays(LocalDate start, LocalDate end) {
+        int days = 0;
+        LocalDate date = start;
+        while (!date.isAfter(end)) {
+            DayOfWeek day = date.getDayOfWeek();
+            if (day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY) {
+                days++;
+            }
+            date = date.plusDays(1);
+        }
+        return days;
+    }
+
 
 }
 

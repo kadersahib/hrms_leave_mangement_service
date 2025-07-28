@@ -12,15 +12,14 @@ import java.time.temporal.ChronoUnit;
 @Component
 public class LeaveApplicationMapper {
 
-    public LeaveApplication toNewLeaveApplication(LeaveRequestDTO dto, int totalAppliedDays,int remainingDays) {
+    public LeaveApplication toNewLeaveApplication(LeaveRequestDTO dto, int totalLeaveDays, int remainingDays) {
         LeaveApplication leave = new LeaveApplication();
         leave.setUserId(dto.getUserId());
         leave.setLeaveTypeId(dto.getLeaveId());
         leave.setStartDate(dto.getStartDate());
         leave.setEndDate(dto.getEndDate());
-        leave.setTotalAppliedDays(totalAppliedDays);
+        leave.setTotalLeaveDays(totalLeaveDays);
         int appliedDays = (int) ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate()) + 1;
-
         leave.setAppliedDays(appliedDays);
         leave.setReportingId(dto.getReportingId());
         leave.setCreatedAt(LocalDateTime.now());
@@ -36,27 +35,24 @@ public class LeaveApplicationMapper {
         return leave;
     }
 
-    public void updateExistingLeaveApplication(LeaveApplication leave, LeaveRequestDTO dto, long requestedDays) {
+
+    public void updateExistingLeaveApplication(LeaveApplication leave, LeaveRequestDTO dto, int requestedDays, int remainingDays) {
         leave.setLeaveTypeId(dto.getLeaveId());
         leave.setStartDate(dto.getStartDate());
         leave.setEndDate(dto.getEndDate());
 
-        // Add to existing totalAppliedDays instead of overwriting
-        int updatedAppliedDays = leave.getTotalAppliedDays() + (int) requestedDays;
-        leave.setTotalAppliedDays(updatedAppliedDays);
-        int appliedDays = (int) ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate()) + 1;
-        leave.setAppliedDays(appliedDays);
+        leave.setAppliedDays(requestedDays);
+        leave.setTotalLeaveDays(leave.getTotalLeaveDays() + requestedDays);
 
         leave.setReportingId(dto.getReportingId());
         leave.setDayOffType(DayOffType.fromString(dto.getDayOffType()));
         leave.setStatus(LeaveStatus.PENDING);
-        leave.setCreatedAt(LocalDateTime.now());
         leave.setUpdatedAt(LocalDateTime.now());
 
         String userIdString = String.valueOf(dto.getUserId());
         leave.setUpdatedBy(userIdString);
 
-        leave.setRemainingDays(leave.getRemainingDays() - (int) requestedDays);
+        leave.setRemainingDays(remainingDays);
     }
 
 }

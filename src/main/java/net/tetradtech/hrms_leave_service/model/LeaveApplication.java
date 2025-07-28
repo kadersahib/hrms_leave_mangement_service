@@ -53,8 +53,8 @@ public class LeaveApplication {
     @Column(name = "dayoff")
     private DayOffType dayOffType;
 
-    @Column(name = "total_days")
-    private int totalAppliedDays;
+    @Column(name = "leave_days")
+    private int totalLeaveDays;
 
     @Column(name = "remaining_days")
     private Integer remainingDays;
@@ -76,9 +76,7 @@ public class LeaveApplication {
 //
 //    @Column(name = "approveBy")
 //    private String approvedBy;
-//
-//    @Column(name = "approvalTime")
-//    private LocalDateTime approvalTimestamp;
+
 
 
 

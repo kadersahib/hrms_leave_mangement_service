@@ -58,8 +58,8 @@ public class LeaveApplicationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<List<LeaveApplication>>> getByUser(@PathVariable Long id) {
-        List<LeaveApplication> leaves = leaveApplicationService.getLeavesByUserId(id);
+    public ResponseEntity<ApiResponse<List<LeaveApplication>>> getLeaveById(@PathVariable Long id) {
+        List<LeaveApplication> leaves = leaveApplicationService.getLeavesById(id);
         if (leaves.isEmpty()) {
             return ResponseEntity.status(404).body(new ApiResponse<>("error", "No UserId  found", null));
         }
@@ -67,11 +67,11 @@ public class LeaveApplicationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteLatest(
+    public ResponseEntity<ApiResponse<String>> delete(
             @PathVariable Long id
     ) {
         try {
-            leaveApplicationService.deleteLatestLeaveByUserId(id);
+            leaveApplicationService.deleteById(id);
             return ResponseEntity.ok(new ApiResponse<>("success", "Leave deleted (soft)", null));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>("error", e.getMessage(), null));
