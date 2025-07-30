@@ -2,7 +2,6 @@
 package net.tetradtech.hrms_leave_service.repository;
 
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
-import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +26,40 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
     boolean existsByUserIdAndLeaveTypeIdAndStartDateBetween(
             Long userId, Long leaveTypeId, LocalDate start, LocalDate end);
+
+
+    @Query("SELECT COUNT(l) FROM LeaveApplication l " +
+            "WHERE l.userId = :userId AND l.isDeleted = false " +
+            "AND l.startDate <= :endDate AND l.endDate >= :startDate")
+    long countOverlappingLeaves(@Param("userId") Long userId,
+                                @Param("startDate") LocalDate startDate,
+                                @Param("endDate") LocalDate endDate);
+
+
+    @Query("SELECT COUNT(l) FROM LeaveApplication l " +
+            "WHERE l.userId = :userId AND l.isDeleted = false AND l.id <> :leaveId " +
+            "AND l.startDate <= :endDate AND l.endDate >= :startDate")
+    int countOverlappingLeavesForUpdate(@Param("userId") Long userId,
+                                        @Param("leaveId") Long leaveId,
+                                        @Param("startDate") LocalDate startDate,
+                                        @Param("endDate") LocalDate endDate);
+
+
+    @Query("SELECT COALESCE(SUM(l.appliedDays), 0) FROM LeaveApplication l " +
+            "WHERE l.userId = :userId AND l.leaveTypeId = :leaveTypeId AND l.isDeleted = false " +
+            "AND YEAR(l.startDate) = :year")
+    int getTotalUsedDaysForYear(@Param("userId") Long userId,
+                                @Param("leaveTypeId") Long leaveTypeId,
+                                @Param("year") int year);
+
+
+    @Query("SELECT COALESCE(SUM(l.appliedDays), 0) FROM LeaveApplication l " +
+            "WHERE l.userId = :userId AND l.leaveTypeId = :leaveTypeId AND l.isDeleted = false " +
+            "AND YEAR(l.startDate) = :year AND l.id <> :excludeId")
+    int getTotalUsedDaysForYearExcludingId(@Param("userId") Long userId,
+                                           @Param("leaveTypeId") Long leaveTypeId,
+                                           @Param("year") int year,
+                                           @Param("excludeId") Long excludeId);
 
 
 }

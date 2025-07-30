@@ -53,8 +53,6 @@ public class LeaveApplication {
     @Column(name = "dayoff")
     private DayOffType dayOffType;
 
-    @Column(name = "leave_days")
-    private int totalLeaveDays;
 
     @Column(name = "remaining_days")
     private Integer remainingDays;
@@ -71,11 +69,11 @@ public class LeaveApplication {
 
 
 
-//    @Column(name = "approvalComment")
-//    private String approvalComment;
-//
-//    @Column(name = "approveBy")
-//    private String approvedBy;
+    @Column(name = "comment")
+    private String comment;
+
+    @Column(name = "approveId")
+    private String approvedId;
 
 
 
@@ -108,7 +106,7 @@ public class LeaveApplication {
     private LocalDateTime updatedAt;
 
     @Column(name = "updatedBy")
-    private String updatedBy;
+    private Long updatedBy;
 
     // Soft delete fields
     @Column(name = "isDeleted")

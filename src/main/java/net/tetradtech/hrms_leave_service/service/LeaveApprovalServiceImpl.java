@@ -1,72 +1,76 @@
-//package net.tetradtech.hrms_leave_service.service;
-//
-//import net.tetradtech.hrms_leave_service.client.LeaveTypeClient;
-//import net.tetradtech.hrms_leave_service.dto.LeaveApprovalDTO;
-//import net.tetradtech.hrms_leave_service.dto.LeaveTypeDTO;
-//import net.tetradtech.hrms_leave_service.model.LeaveApplication;
-//import net.tetradtech.hrms_leave_service.Enum.LeaveStatus;
-//import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
-//
-//import java.time.LocalDateTime;
-//import java.time.temporal.ChronoUnit;
-//import java.util.List;
-//import java.util.Optional;
-//
-//
-//@Service
-//
-//public class LeaveApprovalServiceImpl implements LeaveApprovalService{
-//
-//    @Autowired
-//    private LeaveApplicationRepository leaveApplicationRepository;
-//
-//    @Autowired
-//    private LeaveTypeClient leaveTypeClient;
-//
-//
-//    private static final String SYSTEM_USER = "system";
-//
-//
-//    public LeaveApplication performAction(Long userId, LeaveApprovalDTO dto) {
-//        // Find the latest pending leave application for the user
-//        LeaveApplication leave = leaveApplicationRepository
-//                .findTopByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
-//                .orElseThrow(() -> new IllegalArgumentException("No active leave found for user ID: " + userId));
-//
-//        if (leave.getStatus() == LeaveStatus.CANCELLED || dto.getAction().equalsIgnoreCase("CANCELLED")) {
-//            throw new IllegalStateException("Cannot approve/reject a cancelled leave.");
-//        }
-//
-//        LeaveStatus newStatus = LeaveStatus.valueOf(dto.getAction().toUpperCase());
-//        long appliedDays = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
-//
-//        int year = leave.getStartDate().getYear();
-//        long totalUsedDays = leaveApplicationRepository.sumApprovedLeaveDaysByUserIdAndYear(userId, year);
-//
-//        if (newStatus == LeaveStatus.APPROVED) {
-//            if (totalUsedDays + appliedDays > 20) {
-//                throw new IllegalStateException("Leave limit exceeded. Only 20  leave days allowed per year.");
-//            }
-//
-//            leave.setAppliedDays((int) appliedDays);
-//            leave.setRemainingDays(20 -(int) (totalUsedDays + appliedDays));
-//        } else {
-//            leave.setAppliedDays((int) appliedDays);
-//            leave.setRemainingDays(null);
-//        }
-//
-//        leave.setStatus(newStatus);
-//        leave.setApprovalComment(dto.getComment());
-//        leave.setApprovedBy(dto.getPerformedBy());
-//        leave.setApprovalTimestamp(LocalDateTime.now());
-//        leave.setUpdatedAt(LocalDateTime.now());
-//        leave.setUpdatedBy(SYSTEM_USER);
-//
-//        return leaveApplicationRepository.save(leave);
-//    }
-//
+package net.tetradtech.hrms_leave_service.service;
+
+import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
+import net.tetradtech.hrms_leave_service.dto.LeaveApprovalDTO;
+import net.tetradtech.hrms_leave_service.model.LeaveApplication;
+import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
+import net.tetradtech.hrms_leave_service.util.LeaveTypeUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+
+
+@Service
+public class LeaveApprovalServiceImpl implements LeaveApprovalService{
+
+    @Autowired
+    private LeaveApplicationRepository leaveApplicationRepository;
+
+
+
+    @Override
+    public LeaveApplication approveOrRejectLeave(Long leaveId, LeaveApprovalDTO request) {
+        LeaveApplication leave = leaveApplicationRepository.findById(leaveId)
+                .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + leaveId));
+
+        if (request.getApproveId() == null) {
+            throw new IllegalArgumentException("Approver ID is required.");
+        }
+
+        if (!leave.getReportingId().equals(request.getApproveId())) {
+            throw new IllegalArgumentException("You are not authorized to approve/reject this leave.");
+        }
+
+        if (leave.isDeleted()) {
+            throw new IllegalArgumentException("Cannot approve/reject a deleted leave.");
+        }
+
+        if (leave.getStatus() != LeaveStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING leaves can be approved or rejected.");
+        }
+
+        int maxDays = LeaveTypeUtil.getMaxDays(leave.getLeaveTypeId());
+        int currentYear = leave.getStartDate().getYear();
+
+        if ("approved".equalsIgnoreCase(request.getAction())) {
+            leave.setStatus(LeaveStatus.APPROVED);
+
+            int usedDays = leaveApplicationRepository.getTotalUsedDaysForYear(
+                    leave.getUserId(), leave.getLeaveTypeId(), currentYear);
+            leave.setRemainingDays(maxDays - usedDays);
+
+        } else if ("rejected".equalsIgnoreCase(request.getAction())) {
+            leave.setStatus(LeaveStatus.REJECTED);
+
+            int usedDays = leaveApplicationRepository.getTotalUsedDaysForYear(
+                    leave.getUserId(), leave.getLeaveTypeId(), currentYear) - leave.getAppliedDays();
+            leave.setRemainingDays(maxDays - usedDays);
+
+        } else {
+            throw new IllegalArgumentException("Invalid action. Use 'approved' or 'rejected'.");
+        }
+
+        //  Save comment and approver ID
+        leave.setComment(request.getComment());
+        leave.setApprovedId(String.valueOf(request.getApproveId())); // or Long if field is Long
+        leave.setUpdatedAt(LocalDateTime.now());
+        leave.setUpdatedBy(request.getApproveId());
+
+        return leaveApplicationRepository.save(leave);
+    }
+
 //    @Override
 //    public LeaveApplication updateApproval(Long leaveId, LeaveApprovalDTO dto) {
 //        LeaveApplication leave = leaveApplicationRepository.findByIdAndIsDeletedFalse(leaveId)
@@ -125,6 +129,6 @@
 //        leave.setDeletedBy(SYSTEM_USER);
 //        leaveApplicationRepository.save(leave);
 //    }
-//
-//
-//}
+
+
+}

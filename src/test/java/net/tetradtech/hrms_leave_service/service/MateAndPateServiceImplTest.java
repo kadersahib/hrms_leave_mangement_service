@@ -88,19 +88,18 @@ public class MateAndPateServiceImplTest {
         verify(leaveRepository, times(2)).save(any(LeaveApplication.class)); // no extra save call
     }
 
-
     @Test
     void testUpdateLeave_WithAndWithoutFile() throws Exception {
-        // Setup existing leave
         LeaveApplication existing = new LeaveApplication();
         existing.setId(200L);
+        existing.setUserId(1L); // ✅ Fix: set userId to avoid NPE
         existing.setStatus(LeaveStatus.PENDING);
         existing.setStartDate(LocalDate.now());
 
         when(leaveRepository.findById(200L)).thenReturn(Optional.of(existing));
-        when(leaveRepository.save(any(LeaveApplication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(leaveRepository.save(any(LeaveApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        //  Update with file (should succeed)
         MockMultipartFile file = new MockMultipartFile(
                 "file", "update.pdf", "application/pdf", "update-bytes".getBytes()
         );
@@ -118,7 +117,6 @@ public class MateAndPateServiceImplTest {
         assertTrue(result.getDocumentPath().contains("/api/leaveDocument/download/200"));
         verify(leaveRepository, times(1)).save(any(LeaveApplication.class));
 
-        // Update without file (should throw exception)
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 service.updateLeave(
                         200L, 1L, 3L, DayOffType.LEAVE, 5L,
@@ -132,6 +130,7 @@ public class MateAndPateServiceImplTest {
         verify(leaveRepository, times(1)).save(any(LeaveApplication.class)); // still only 1 save call
     }
 
+
     @Test
     void testRejectExceedingMaternityDays() {
         when(userServiceClient.getUserById(1L)).thenReturn(femaleUser);
@@ -139,7 +138,7 @@ public class MateAndPateServiceImplTest {
                 .thenReturn(false);
 
         LocalDate start = LocalDate.of(2025, 1, 1);
-        LocalDate end = start.plusDays(150); // 151 days (exceeds 100)
+        LocalDate end = start.plusDays(150); // 151 days (exceeds 120)
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 service.applyLeave(
@@ -148,7 +147,7 @@ public class MateAndPateServiceImplTest {
                 )
         );
 
-        assertEquals("Maternity leave cannot exceed 100 days.", ex.getMessage());
+        assertEquals("Maternity leave cannot exceed 120 days.", ex.getMessage());
         verify(leaveRepository, never()).save(any());
     }
 

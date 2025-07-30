@@ -8,10 +8,12 @@ import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.mapper.LeaveApplicationMapper;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
+import net.tetradtech.hrms_leave_service.util.LeaveTypeUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -40,283 +42,204 @@ public class LeaveApplicationServiceImplTest {
     private LeaveApplicationMapper leaveApplicationMapper;
 
     @Test
-    void applyLeave_Success() {
-        LeaveApplicationServiceImpl spyService = Mockito.spy(leaveService);
-
+    void testApplyLeave_Success() {
         LeaveRequestDTO request = new LeaveRequestDTO();
         request.setUserId(1L);
         request.setLeaveId(1L);
         request.setStartDate(LocalDate.now().plusDays(1));
         request.setEndDate(LocalDate.now().plusDays(3));
-        request.setReportingId(10L);
-        request.setDayOffType("leave");
 
         UserDTO user = new UserDTO();
         user.setId(1L);
 
-        LeaveApplication leaveApp = new LeaveApplication();
-        leaveApp.setId(101L);   // ✅ ID is 101L
-
         when(userServiceClient.getUserById(1L)).thenReturn(user);
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L)).thenReturn(Collections.emptyList());
-        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 1L)).thenReturn(Collections.emptyList());
-        when(leaveApplicationMapper.toNewLeaveApplication(any(), anyInt(), anyInt())).thenReturn(leaveApp);
-        when(leaveApplicationRepository.save(any(LeaveApplication.class))).thenReturn(leaveApp);
+        when(leaveApplicationRepository.countOverlappingLeaves(
+                1L,
+                request.getStartDate(),
+                request.getEndDate()
+        )).thenReturn(0L);
 
-        doReturn(3).when(spyService).calculateWorkingDays(any(LocalDate.class), any(LocalDate.class));
+        when(leaveApplicationRepository.getTotalUsedDaysForYear(
+                1L, 1L, request.getStartDate().getYear()
+        )).thenReturn(0);
 
-        LeaveApplication result = spyService.applyLeave(request);
+        LeaveApplication newLeave = new LeaveApplication();
+        when(leaveApplicationMapper.toNewLeaveApplication(any(), anyInt(), anyInt())).thenReturn(newLeave);
+        when(leaveApplicationRepository.save(any())).thenReturn(newLeave);
+
+        LeaveApplication result = leaveService.applyLeave(request);
 
         assertNotNull(result);
-        assertEquals(101L, result.getId()); //  Match mocked ID
-        verify(spyService, times(1)).calculateWorkingDays(any(), any());
-        verify(leaveApplicationRepository, times(1)).save(any());
+        verify(leaveApplicationRepository).save(newLeave);
     }
 
     @Test
-    void applyLeave_InvalidUser_ThrowsException() {
+    void InvalidUser() {
         LeaveRequestDTO request = new LeaveRequestDTO();
         request.setUserId(99L);
-        request.setLeaveId(1L);
-        request.setStartDate(LocalDate.now().plusDays(1));
-        request.setEndDate(LocalDate.now().plusDays(2));
-        request.setReportingId(1L);
-        request.setDayOffType("Leave");
+
         when(userServiceClient.getUserById(99L)).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(request));
     }
 
     @Test
-    void applyLeave_InvalidDates_ThrowsException() {
-        // Case 1: Start date is in the past
-        LeaveRequestDTO pastStartRequest = new LeaveRequestDTO();
-        pastStartRequest.setUserId(1L);
-        pastStartRequest.setLeaveId(1L);
-        pastStartRequest.setStartDate(LocalDate.now().minusDays(1));  // yesterday (past)
-        pastStartRequest.setEndDate(LocalDate.now().plusDays(2));     // future
-        pastStartRequest.setReportingId(1L);
-        pastStartRequest.setDayOffType("Leave");
-
-        UserDTO user = new UserDTO();
-        when(userServiceClient.getUserById(1L)).thenReturn(user);
-
-        assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(pastStartRequest),
-                "Expected exception for leave start date in the past");
-
-        // Case 2: End date is before start date
-        LeaveRequestDTO endBeforeStartRequest = new LeaveRequestDTO();
-        endBeforeStartRequest.setUserId(1L);
-        endBeforeStartRequest.setLeaveId(1L);
-        endBeforeStartRequest.setStartDate(LocalDate.now().plusDays(5)); // future start
-        endBeforeStartRequest.setEndDate(LocalDate.now().plusDays(2));   // earlier than start
-
-        endBeforeStartRequest.setReportingId(1L);
-        endBeforeStartRequest.setDayOffType("Leave");
-
-        assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(endBeforeStartRequest),
-                "Expected exception when end date is before start date");
-    }
-
-    @Test
-    void applyLeave_ActiveLeaveExists_ThrowsException() {
+    void StartDateInPast() {
         LeaveRequestDTO request = new LeaveRequestDTO();
         request.setUserId(1L);
-        request.setLeaveId(2L);
-        request.setStartDate(LocalDate.now().plusDays(1));
-        request.setEndDate(LocalDate.now().plusDays(3));
+        request.setStartDate(LocalDate.now().minusDays(1));
+        request.setEndDate(LocalDate.now());
 
-        UserDTO user = new UserDTO();
-        user.setId(1L);
+        when(userServiceClient.getUserById(1L)).thenReturn(new UserDTO());
 
-        LeaveApplication activeLeave = new LeaveApplication();
-        activeLeave.setStatus(LeaveStatus.PENDING);
-
-        when(userServiceClient.getUserById(1L)).thenReturn(user);
-        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 2L))
-                .thenReturn(List.of(activeLeave));
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(request));
-
-        assertEquals("You already have an active leave request for this leave type. Wait until its status changes.", ex.getMessage());
-        verify(leaveApplicationRepository, times(1))
-                .findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 2L);
+        assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(request));
     }
 
     @Test
-    void applyLeave_NoActiveLeave_AllowsRequest() {
+    void EndDateBeforeStartDate() {
         LeaveRequestDTO request = new LeaveRequestDTO();
         request.setUserId(1L);
-        request.setLeaveId(2L);
-        request.setStartDate(LocalDate.now().plusDays(1));
+        request.setStartDate(LocalDate.now().plusDays(5));
         request.setEndDate(LocalDate.now().plusDays(3));
 
-        UserDTO user = new UserDTO();
-        user.setId(1L);
+        when(userServiceClient.getUserById(1L)).thenReturn(new UserDTO());
 
-        when(userServiceClient.getUserById(1L)).thenReturn(user);
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L)).thenReturn(Collections.emptyList());
-        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 2L))
-                .thenReturn(Collections.emptyList());
-
-        assertDoesNotThrow(() -> leaveService.applyLeave(request));
+        assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(request));
     }
-    @Test
-    void applyLeave_DuplicateLeave_ThrowsException() {
-        LeaveApplicationServiceImpl spyService = Mockito.spy(leaveService);
 
+    @Test
+    void ExceedsMaxDays() {
         LeaveRequestDTO request = new LeaveRequestDTO();
         request.setUserId(1L);
         request.setLeaveId(1L);
         request.setStartDate(LocalDate.now().plusDays(1));
-        request.setEndDate(LocalDate.now().plusDays(3));
-        request.setReportingId(1L);
-        request.setDayOffType("Leave");
+        request.setEndDate(LocalDate.now().plusDays(35)); // too many days
 
-        UserDTO user = new UserDTO();
-        when(userServiceClient.getUserById(1L)).thenReturn(user);
+        when(userServiceClient.getUserById(1L)).thenReturn(new UserDTO());
 
-        LeaveApplication existing = new LeaveApplication();
-        existing.setStartDate(request.getStartDate());
-        existing.setEndDate(request.getEndDate());
+        when(leaveApplicationRepository.countOverlappingLeaves(
+                1L,
+                request.getStartDate(),
+                request.getEndDate()
+        )).thenReturn(0L);
 
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L)).thenReturn(List.of(existing));
+        when(leaveApplicationRepository.getTotalUsedDaysForYear(
+                1L, 1L, request.getStartDate().getYear()
+        )).thenReturn(0);
 
-        assertThrows(IllegalArgumentException.class, () -> spyService.applyLeave(request));
+        assertThrows(IllegalArgumentException.class, () -> leaveService.applyLeave(request));
     }
 
     @Test
-    void applyLeave_ExceedsMaxDays_ThrowsException() {
-        LeaveApplicationServiceImpl spyService = Mockito.spy(leaveService);
+    void OverlappingDates() {
+        LeaveRequestDTO request = new LeaveRequestDTO();
+        request.setUserId(1L);
+        request.setLeaveId(1L);
+        request.setStartDate(LocalDate.now().plusDays(3));
+        request.setEndDate(LocalDate.now().plusDays(5));
 
+        when(userServiceClient.getUserById(1L)).thenReturn(new UserDTO());
+        when(leaveApplicationRepository.countOverlappingLeaves(
+                1L,
+                request.getStartDate(),
+                request.getEndDate()
+        )).thenReturn(1L); // Simulate overlapping
+
+        assertThrows(IllegalArgumentException.class,
+                () -> leaveService.applyLeave(request));
+    }
+
+    @Test
+    void RemainingDaysExceededDueToUsedDays() {
         LeaveRequestDTO request = new LeaveRequestDTO();
         request.setUserId(1L);
         request.setLeaveId(1L);
         request.setStartDate(LocalDate.now().plusDays(1));
-        request.setEndDate(LocalDate.now().plusDays(15));
+        request.setEndDate(LocalDate.now().plusDays(3)); // 3 days requested
 
-        UserDTO user = new UserDTO();
-        when(userServiceClient.getUserById(1L)).thenReturn(user);
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L)).thenReturn(Collections.emptyList());
-        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 1L)).thenReturn(Collections.emptyList());
+        when(userServiceClient.getUserById(1L)).thenReturn(new UserDTO());
+        when(leaveApplicationRepository.countOverlappingLeaves(
+                1L,
+                request.getStartDate(),
+                request.getEndDate()
+        )).thenReturn(0L);
+        when(leaveApplicationRepository.getTotalUsedDaysForYear(
+                1L, 1L, request.getStartDate().getYear()
+        )).thenReturn(9); // Already used 9 of 10 days
 
-        // Force calculateWorkingDays to return 40 (exceeds max sick leave 30)
-        doReturn(40).when(spyService).calculateWorkingDays(any(LocalDate.class), any(LocalDate.class));
+        try (MockedStatic<LeaveTypeUtil> mocked = Mockito.mockStatic(LeaveTypeUtil.class)) {
+            mocked.when(() -> LeaveTypeUtil.getMaxDays(1L)).thenReturn(10);
 
-        assertThrows(IllegalArgumentException.class, () -> spyService.applyLeave(request));
+            assertThrows(IllegalArgumentException.class,
+                    () -> leaveService.applyLeave(request));
+        }
     }
 
-    @Test
-    void getMaxDaysForLeaveType_Test() {
-        assertEquals(30, leaveService.getMaxDaysForLeaveType(1L));
-        assertEquals(20, leaveService.getMaxDaysForLeaveType(2L));
-        assertThrows(IllegalArgumentException.class, () -> leaveService.getMaxDaysForLeaveType(5L));
-    }
-
-    // Update Method
-    @Test
-    void updateLeave_Success() {
-        LeaveApplicationServiceImpl spyService = Mockito.spy(leaveService);
-
-        Long leaveId = 1L;
-
-        LeaveApplication existingLeave = new LeaveApplication();
-        existingLeave.setId(leaveId);
-        existingLeave.setUserId(1L);
-        existingLeave.setStatus(LeaveStatus.PENDING);
-        existingLeave.setStartDate(LocalDate.now().plusDays(5));
-        existingLeave.setEndDate(LocalDate.now().plusDays(7));
-        existingLeave.setLeaveTypeId(1L);
-
-        LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
-        updatedData.setUserId(1L);
-        updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().plusDays(10));
-        updatedData.setEndDate(LocalDate.now().plusDays(12));
-        updatedData.setReportingId(100L);
-        updatedData.setDayOffType("leave");
-
-        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(leaveId))
-                .thenReturn(Optional.of(existingLeave));
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L))
-                .thenReturn(Collections.singletonList(existingLeave));
-        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 1L))
-                .thenReturn(Collections.singletonList(existingLeave));
-        when(leaveApplicationRepository.save(any(LeaveApplication.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        doReturn(3).when(spyService)
-                .calculateWorkingDays(any(LocalDate.class), any(LocalDate.class));
-
-        LeaveApplication result = spyService.updateLeave(leaveId, updatedData);
-
-        assertNotNull(result);
-        assertEquals(updatedData.getStartDate(), result.getStartDate());
-        assertEquals(3, result.getTotalLeaveDays());
-        verify(leaveApplicationRepository, times(1)).save(any());
-    }
 
     @Test
-    void updateLeave_LeaveNotFound_ThrowsException() {
-        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(99L))
-                .thenReturn(Optional.empty());
-
-        LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
-        updatedData.setUserId(1L);
-        updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().plusDays(1));
-        updatedData.setEndDate(LocalDate.now().plusDays(2));
-        updatedData.setReportingId(100L);
-        updatedData.setDayOffType("leave");
-
-        assertThrows(IllegalArgumentException.class, () -> leaveService.updateLeave(99L, updatedData));
-    }
-
-    @Test
-    void updateLeave_UserIdMismatch_ThrowsException() {
+    void testUpdateLeave_Success() {
         LeaveApplication existing = new LeaveApplication();
         existing.setId(1L);
         existing.setUserId(1L);
         existing.setStatus(LeaveStatus.PENDING);
+        existing.setStartDate(LocalDate.now().plusDays(2));
+        existing.setEndDate(LocalDate.now().plusDays(3));
 
         LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
-        updatedData.setUserId(2L);
+        updatedData.setUserId(1L);
         updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().plusDays(5));
-        updatedData.setEndDate(LocalDate.now().plusDays(7));
-        updatedData.setReportingId(100L);
+        updatedData.setStartDate(LocalDate.now().plusDays(2));
+        updatedData.setEndDate(LocalDate.now().plusDays(4));
         updatedData.setDayOffType("leave");
 
         when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L))
                 .thenReturn(Optional.of(existing));
+
+        // Mark lenient to avoid UnnecessaryStubbingException
+        lenient().when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L))
+                .thenReturn(Collections.singletonList(existing));
+
+        when(leaveApplicationRepository.save(any()))
+                .thenReturn(existing);
+
+        LeaveApplication result = leaveService.updateLeave(1L, updatedData);
+
+        assertNotNull(result);
+        verify(leaveApplicationRepository).save(existing);
+    }
+
+    @Test
+    void UserIdMismatch() {
+        LeaveApplication existing = new LeaveApplication();
+        existing.setId(1L);
+        existing.setUserId(2L);
+        existing.setStatus(LeaveStatus.PENDING);
+
+        LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
+        updatedData.setUserId(1L);
+
+        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class, () -> leaveService.updateLeave(1L, updatedData));
     }
 
     @Test
-    void updateLeave_StatusNotPending_ThrowsException() {
+    void NotPendingStatus() {
         LeaveApplication existing = new LeaveApplication();
         existing.setId(1L);
         existing.setUserId(1L);
-        existing.setStatus(LeaveStatus.APPROVED); // Not pending
+        existing.setStatus(LeaveStatus.APPROVED);
 
         LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
         updatedData.setUserId(1L);
-        updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().plusDays(1));
-        updatedData.setEndDate(LocalDate.now().plusDays(2));
-        updatedData.setReportingId(100L);
-        updatedData.setDayOffType("leave");
 
-        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L))
-                .thenReturn(Optional.of(existing));
+        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalStateException.class, () -> leaveService.updateLeave(1L, updatedData));
     }
 
-
     @Test
-    void updateLeave_StartDateInPast_ThrowsException() {
+    void testUpdateLeave_StartDateInPast() {
         LeaveApplication existing = new LeaveApplication();
         existing.setId(1L);
         existing.setUserId(1L);
@@ -324,20 +247,16 @@ public class LeaveApplicationServiceImplTest {
 
         LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
         updatedData.setUserId(1L);
-        updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().minusDays(1));
-        updatedData.setEndDate(LocalDate.now().plusDays(2));
-        updatedData.setReportingId(100L);
-        updatedData.setDayOffType("FULL_DAY");
+        updatedData.setStartDate(LocalDate.now().minusDays(2));
+        updatedData.setEndDate(LocalDate.now());
 
-        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L))
-                .thenReturn(Optional.of(existing));
+        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class, () -> leaveService.updateLeave(1L, updatedData));
     }
 
     @Test
-    void updateLeave_EndDateBeforeStartDate_ThrowsException() {
+    void testUpdateLeave_EndDateBeforeStartDate() {
         LeaveApplication existing = new LeaveApplication();
         existing.setId(1L);
         existing.setUserId(1L);
@@ -345,85 +264,71 @@ public class LeaveApplicationServiceImplTest {
 
         LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
         updatedData.setUserId(1L);
-        updatedData.setLeaveId(1L);
         updatedData.setStartDate(LocalDate.now().plusDays(5));
-        updatedData.setEndDate(LocalDate.now().plusDays(2));
-        updatedData.setReportingId(100L);
-        updatedData.setDayOffType("leave");
+        updatedData.setEndDate(LocalDate.now().plusDays(3));
 
-        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L))
-                .thenReturn(Optional.of(existing));
+        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class, () -> leaveService.updateLeave(1L, updatedData));
     }
 
     @Test
-    void updateLeave_OverlappingDates_ThrowsException() {
-        LeaveApplicationServiceImpl spyService = Mockito.spy(leaveService);
-
+    void testUpdateLeave_OverlappingDates() {
         LeaveApplication existing = new LeaveApplication();
         existing.setId(1L);
         existing.setUserId(1L);
+        existing.setLeaveTypeId(1L);
         existing.setStatus(LeaveStatus.PENDING);
-
-        LeaveApplication anotherLeave = new LeaveApplication();
-        anotherLeave.setId(2L);
-        anotherLeave.setUserId(1L);
-        anotherLeave.setStartDate(LocalDate.now().plusDays(6));
-        anotherLeave.setEndDate(LocalDate.now().plusDays(8));
+        existing.setStartDate(LocalDate.now().plusDays(2));
+        existing.setEndDate(LocalDate.now().plusDays(3));
 
         LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
         updatedData.setUserId(1L);
         updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().plusDays(6));
-        updatedData.setEndDate(LocalDate.now().plusDays(8));
-        updatedData.setReportingId(100L);
+        updatedData.setStartDate(LocalDate.now().plusDays(2));
+        updatedData.setEndDate(LocalDate.now().plusDays(3));
         updatedData.setDayOffType("leave");
 
         when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L))
                 .thenReturn(Optional.of(existing));
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L))
-                .thenReturn(List.of(existing, anotherLeave));
 
-        assertThrows(IllegalArgumentException.class, () -> spyService.updateLeave(1L, updatedData));
+        when(leaveApplicationRepository.countOverlappingLeavesForUpdate(
+                eq(1L), eq(1L), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(1); // Overlap found
+
+        assertThrows(IllegalArgumentException.class,
+                () -> leaveService.updateLeave(1L, updatedData));
     }
 
-    @Test
-    void updateLeave_ExceedsBalance_ThrowsException() {
-        LeaveApplicationServiceImpl spyService = Mockito.spy(leaveService);
 
+    @Test
+    void testUpdateLeave_RemainingDaysExceeded() {
         LeaveApplication existing = new LeaveApplication();
         existing.setId(1L);
         existing.setUserId(1L);
         existing.setStatus(LeaveStatus.PENDING);
-        existing.setLeaveTypeId(1L);
+        existing.setStartDate(LocalDate.now().plusDays(2));
+        existing.setEndDate(LocalDate.now().plusDays(3));
 
         LeaveUpdateRequestDTO updatedData = new LeaveUpdateRequestDTO();
         updatedData.setUserId(1L);
         updatedData.setLeaveId(1L);
-        updatedData.setStartDate(LocalDate.now().plusDays(1));
-        updatedData.setEndDate(LocalDate.now().plusDays(20));
-        updatedData.setReportingId(100L);
+        updatedData.setStartDate(LocalDate.now().plusDays(2));
+        updatedData.setEndDate(LocalDate.now().plusDays(10)); // 9 days request
         updatedData.setDayOffType("leave");
 
-        LeaveApplication used = new LeaveApplication();
-        used.setId(2L);
-        used.setUserId(1L);
-        used.setLeaveTypeId(1L);
-        used.setStartDate(LocalDate.now().plusDays(30));
-        used.setEndDate(LocalDate.now().plusDays(40));
+        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(existing));
+        when(leaveApplicationRepository.countOverlappingLeavesForUpdate(anyLong(), anyLong(), any(), any()))
+                .thenReturn(0);
+        when(leaveApplicationRepository.getTotalUsedDaysForYearExcludingId(anyLong(), anyLong(), anyInt(), anyLong()))
+                .thenReturn(5); // Already used 5 days
 
-        when(leaveApplicationRepository.findByIdAndIsDeletedFalse(1L))
-                .thenReturn(Optional.of(existing));
-        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(1L))
-                .thenReturn(List.of(existing));
-        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(1L, 1L))
-                .thenReturn(List.of(existing, used));
+        try (MockedStatic<LeaveTypeUtil> mocked = Mockito.mockStatic(LeaveTypeUtil.class)) {
+            mocked.when(() -> LeaveTypeUtil.getMaxDays(1L)).thenReturn(10);
 
-        doReturn(15).when(spyService)
-                .calculateWorkingDays(any(LocalDate.class), any(LocalDate.class));
-
-        assertThrows(IllegalArgumentException.class, () -> spyService.updateLeave(1L, updatedData));
+            assertThrows(IllegalArgumentException.class,
+                    () -> leaveService.updateLeave(1L, updatedData));
+        }
     }
 
     @Test
@@ -473,7 +378,7 @@ public class LeaveApplicationServiceImplTest {
     }
 
     @Test
-    void deleteById_NotFound_ThrowsException() {
+    void deleteById_NotFound() {
         when(leaveApplicationRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> leaveService.deleteById(99L));
@@ -498,7 +403,7 @@ public class LeaveApplicationServiceImplTest {
     }
 
     @Test
-    void cancelLeave_AlreadyDeleted_ThrowsException() {
+    void cancelLeave_AlreadyDeleted() {
         LeaveApplication leave = new LeaveApplication();
         leave.setId(10L);
         leave.setDeleted(true);
@@ -509,7 +414,7 @@ public class LeaveApplicationServiceImplTest {
     }
 
     @Test
-    void cancelLeave_StatusNotPending_ThrowsException() {
+    void cancelLeave_StatusNotPending() {
         LeaveApplication leave = new LeaveApplication();
         leave.setId(10L);
         leave.setDeleted(false);

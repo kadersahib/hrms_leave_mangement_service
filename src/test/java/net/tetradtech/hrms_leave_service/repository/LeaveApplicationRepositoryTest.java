@@ -29,7 +29,7 @@ class LeaveApplicationRepositoryTest {
 
     @BeforeEach
     void setup() {
-        repository.deleteAll(); // clean db before each test
+        repository.deleteAll();
 
         leave1 = new LeaveApplication();
         leave1.setUserId(1L);
@@ -87,4 +87,49 @@ class LeaveApplicationRepositoryTest {
                 1L, 2L, LocalDate.of(2025, 8, 1), LocalDate.of(2025, 8, 3));
         assertTrue(exists);
     }
+
+    @Test
+    void testCountOverlappingLeaves() {
+        long count = repository.countOverlappingLeaves(
+                1L,
+                LocalDate.of(2025, 8, 2),  // falls inside leave1 (2025-08-01 to 2025-08-03)
+                LocalDate.of(2025, 8, 2)
+        );
+        assertEquals(1L, count); // One leave overlaps, assert with long literal
+    }
+
+    @Test
+    void testCountOverlappingLeavesExcludingId() {
+        int count = repository.countOverlappingLeavesForUpdate(
+                1L,
+                leave1.getId(),  // exclude leave1
+                LocalDate.of(2025, 8, 2),
+                LocalDate.of(2025, 8, 2)
+        );
+        assertEquals(0, count); // Excluding leave1 => 0 overlaps
+    }
+
+    @Test
+    void testGetTotalUsedDaysForYear() {
+        leave1.setAppliedDays(3);
+        leave2.setAppliedDays(2);
+        repository.save(leave1);
+        repository.save(leave2);
+
+        int totalDays = repository.getTotalUsedDaysForYear(1L, 2L, 2025);
+        assertEquals(3, totalDays);
+    }
+
+    @Test
+    void testGetTotalUsedDaysForYearExcludingId() {
+        leave1.setAppliedDays(3);
+        leave2.setAppliedDays(2);
+        repository.save(leave1);
+        repository.save(leave2);
+
+        int totalDays = repository.getTotalUsedDaysForYearExcludingId(
+                1L, 2L, 2025, leave1.getId());
+        assertEquals(0, totalDays); // leave1 excluded
+    }
+
 }

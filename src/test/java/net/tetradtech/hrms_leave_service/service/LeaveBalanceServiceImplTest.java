@@ -1,10 +1,9 @@
 package net.tetradtech.hrms_leave_service.service;
 
-import net.tetradtech.hrms_leave_service.dto.LeaveBalanceDTO;
+import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
-import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,47 +27,69 @@ class LeaveBalanceServiceImplTest {
     @Mock
     private UserServiceClient userServiceClient;
 
+    // Test getAllLeaves() with supported type (Sick Leave)
     @Test
-    void testGetAllLeaves() {
+    void testGetAllLeaves_Success() {
         LeaveApplication leave = new LeaveApplication();
         leave.setUserId(1L);
-        leave.setLeaveTypeId(100L);
-        leave.setRemainingDays(5);
-        leave.setTotalLeaveDays(10);
+        leave.setLeaveTypeId(1L); // Sick Leave
+        leave.setAppliedDays(5);
+        leave.setDeleted(false);
 
         when(leaveApplicationRepository.findByIsDeletedFalse()).thenReturn(List.of(leave));
 
-        UserDTO user = new UserDTO();
-        user.setName("John");
-        when(userServiceClient.getUserById(1L)).thenReturn(user);
-
-        List<LeaveBalanceDTO> result = leaveBalanceService.getAllLeaves();
+        List<Map<String, Object>> result = leaveBalanceService.getAllLeaves();
 
         assertEquals(1, result.size());
-        assertEquals("John", result.getFirst().getName());
-        assertEquals(100L, result.getFirst().getLeaveId());
+        Map<String, Object> userData = result.getFirst();
+        assertEquals(1L, userData.get("userId"));
+
+        Map<String, Object> leaveData = (Map<String, Object>) userData.get("Sick Leave");
+        assertEquals(5, leaveData.get("totalApplied"));
+        assertEquals(25, leaveData.get("balanceDays")); // 30 - 5
+
         verify(leaveApplicationRepository, times(1)).findByIsDeletedFalse();
     }
 
+    //  Test getAllLeaves() filters maternity/paternity
+    @Test
+    void testGetAllLeaves_FiltersUnsupportedTypes() {
+        LeaveApplication maternityLeave = new LeaveApplication();
+        maternityLeave.setUserId(2L);
+        maternityLeave.setLeaveTypeId(3L); // Maternity
+        maternityLeave.setAppliedDays(10);
+        maternityLeave.setDeleted(false);
+
+        when(leaveApplicationRepository.findByIsDeletedFalse()).thenReturn(List.of(maternityLeave));
+
+        List<Map<String, Object>> result = leaveBalanceService.getAllLeaves();
+
+        // Since isSupported() excludes 3L, result should be empty
+        assertEquals(0, result.size());
+    }
+
+    // Test getLeavesByUserId() success with Personal Leave
     @Test
     void testGetLeavesByUserId_Success() {
         LeaveApplication leave = new LeaveApplication();
         leave.setUserId(2L);
-        leave.setLeaveTypeId(200L);
-        leave.setRemainingDays(8);
-        leave.setTotalLeaveDays(15);
+        leave.setLeaveTypeId(2L); // Personal Leave
+        leave.setAppliedDays(8);
+        leave.setDeleted(false);
 
+        when(userServiceClient.getUserById(2L)).thenReturn(new UserDTO());
         when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(2L)).thenReturn(List.of(leave));
 
-        UserDTO user = new UserDTO();
-        user.setName("Alice");
-        when(userServiceClient.getUserById(2L)).thenReturn(user);
-
-        List<LeaveBalanceDTO> result = leaveBalanceService.getLeavesByUserId(2L);
+        List<Map<String, Object>> result = leaveBalanceService.getLeavesByUserId(2L);
 
         assertEquals(1, result.size());
-        assertEquals("Alice", result.getFirst().getName());
-        assertEquals(200L, result.getFirst().getLeaveId());
+        Map<String, Object> userData = result.getFirst();
+        assertEquals(2L, userData.get("userId"));
+
+        Map<String, Object> leaveData = (Map<String, Object>) userData.get("Personal Leave");
+        assertEquals(8, leaveData.get("totalApplied"));
+        assertEquals(12, leaveData.get("balanceDays")); // 20 - 8
+
         verify(userServiceClient, times(1)).getUserById(2L);
     }
 
@@ -76,54 +97,64 @@ class LeaveBalanceServiceImplTest {
     void testGetLeavesByUserId_UserNotFound() {
         when(userServiceClient.getUserById(99L)).thenReturn(null);
 
-        Exception ex = assertThrows(IllegalArgumentException.class, () ->
-                leaveBalanceService.getLeavesByUserId(99L));
+        Exception ex = assertThrows(IllegalArgumentException.class,
+                () -> leaveBalanceService.getLeavesByUserId(99L));
 
-        assertEquals("User with ID 99 not found", ex.getMessage());
+        assertTrue(ex.getMessage().contains("User with ID 99 not found"));
+    }
+
+    @Test
+    void testGetLeavesByUserId_NoLeaves() {
+        when(userServiceClient.getUserById(2L)).thenReturn(new UserDTO());
+        when(leaveApplicationRepository.findByUserIdAndIsDeletedFalse(2L)).thenReturn(Collections.emptyList());
+
+        Exception ex = assertThrows(IllegalArgumentException.class,
+                () -> leaveBalanceService.getLeavesByUserId(2L));
+
+        assertTrue(ex.getMessage().contains("No leave data found for user ID 2"));
     }
 
     @Test
     void testGetLeaveBalanceByUserIdAndLeaveType_Success() {
         LeaveApplication leave = new LeaveApplication();
         leave.setUserId(3L);
-        leave.setLeaveTypeId(300L);
-        leave.setRemainingDays(6);
-        leave.setTotalLeaveDays(12);
+        leave.setLeaveTypeId(1L); // Sick Leave
+        leave.setAppliedDays(10);
+        leave.setDeleted(false);
 
-        when(leaveApplicationRepository.findAllByUserIdAndIsDeletedFalse(3L)).thenReturn(List.of(leave));
+        when(userServiceClient.getUserById(3L)).thenReturn(new UserDTO());
+        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(3L, 1L))
+                .thenReturn(List.of(leave));
 
-        UserDTO user = new UserDTO();
-        user.setName("Bob");
-        when(userServiceClient.getUserById(3L)).thenReturn(user);
+        Map<String, Object> result = leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(3L, 1L);
 
-        List<LeaveBalanceDTO> result = leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(3L, 300L);
+        assertEquals("Sick Leave", result.get("leaveTypeName"));
+        assertEquals(10, result.get("totalApplied"));
+        assertEquals(20, result.get("balanceDays")); // 30 - 10
 
-        assertEquals(1, result.size());
-        assertEquals("Bob", result.getFirst().getName());
-        assertEquals(300L, result.getFirst().getLeaveId());
+        verify(leaveApplicationRepository, times(1))
+                .findByUserIdAndLeaveTypeIdAndIsDeletedFalse(3L, 1L);
     }
 
     @Test
     void testGetLeaveBalanceByUserIdAndLeaveType_UserNotFound() {
         when(userServiceClient.getUserById(5L)).thenReturn(null);
 
-        Exception ex = assertThrows(IllegalArgumentException.class, () ->
-                leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(5L, 500L));
+        Exception ex = assertThrows(IllegalArgumentException.class,
+                () -> leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(5L, 1L));
 
-        assertEquals("User ID not found: 5", ex.getMessage());
+        assertTrue(ex.getMessage().contains("User with ID 5 not found"));
     }
 
     @Test
-    void testGetLeaveBalanceByUserIdAndLeaveType_NoLeavesFound() {
-        UserDTO user = new UserDTO();
-        user.setName("Charlie");
-        when(userServiceClient.getUserById(6L)).thenReturn(user);
+    void testGetLeaveBalanceByUserIdAndLeaveType_NoData() {
+        when(userServiceClient.getUserById(6L)).thenReturn(new UserDTO());
+        when(leaveApplicationRepository.findByUserIdAndLeaveTypeIdAndIsDeletedFalse(6L, 1L))
+                .thenReturn(Collections.emptyList());
 
-        when(leaveApplicationRepository.findAllByUserIdAndIsDeletedFalse(6L)).thenReturn(Collections.emptyList());
+        Exception ex = assertThrows(IllegalArgumentException.class,
+                () -> leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(6L, 1L));
 
-        Exception ex = assertThrows(IllegalArgumentException.class, () ->
-                leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(6L, 600L));
-
-        assertEquals("No leaves found for leaveTypeId: 600", ex.getMessage());
+        assertTrue(ex.getMessage().contains("No leave data found for user ID 6 and leaveTypeId 1"));
     }
 }

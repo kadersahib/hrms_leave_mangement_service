@@ -18,6 +18,4 @@ public interface MateAndPateService {
             DayOffType dayOffType, Long reportingId,
             LocalDate startDate, LocalDate endDate, MultipartFile file);
 
-
-
 }

@@ -1,14 +1,13 @@
 package net.tetradtech.hrms_leave_service.controller;
 
-import net.tetradtech.hrms_leave_service.dto.LeaveBalanceDTO;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
 import net.tetradtech.hrms_leave_service.service.LeaveBalanceService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/leave-balance")
@@ -19,10 +18,10 @@ public class LeaveBalanceController {
 
 
     @GetMapping("/all")
-    public ResponseEntity<ApiResponse<List<LeaveBalanceDTO>>> getAllLeaveBalances() {
-        List<LeaveBalanceDTO> data = leaveBalanceService.getAllLeaves();
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAllLeaveBalances() {
+        List<Map<String, Object>> data = leaveBalanceService.getAllLeaves();
 
-        ApiResponse<List<LeaveBalanceDTO>> response = new ApiResponse<>(
+        ApiResponse<List<Map<String, Object>>> response = new ApiResponse<>(
                 "success",
                 "All leave balances fetched successfully",
                 data
@@ -30,33 +29,37 @@ public class LeaveBalanceController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<List<LeaveBalanceDTO>>> getLeaveBalancesByUserId(@PathVariable Long userId) {
-        List<LeaveBalanceDTO> data = leaveBalanceService.getLeavesByUserId(userId);
 
-        ApiResponse<List<LeaveBalanceDTO>> response = new ApiResponse<>(
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getLeavesByUserId(@PathVariable Long userId) {
+        List<Map<String, Object>> data = leaveBalanceService.getLeavesByUserId(userId);
+
+        ApiResponse<List<Map<String, Object>>> response = new ApiResponse<>(
                 "success",
-                "Leave balance for user ID " + userId + " fetched successfully",
+                "Leave balances fetched successfully",
                 data
         );
         return ResponseEntity.ok(response);
     }
 
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<LeaveBalanceDTO>>> getLeaveBalance(
-            @RequestParam Long userId,
-            @RequestParam Long leaveTypeId) {
+    @GetMapping("/user/{userId}/leaveTypeId/{leaveTypeId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getLeaveBalanceByUserIdAndLeaveType(
+            @PathVariable Long userId,
+            @PathVariable Long leaveTypeId) {
 
-        List<LeaveBalanceDTO> balance = leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(userId, leaveTypeId);
+        Map<String, Object> data = leaveBalanceService.getLeaveBalanceByUserIdAndLeaveType(userId, leaveTypeId);
 
-        if (balance.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    new ApiResponse<>("error", "No leave balance found for userId " + userId + " and type " + leaveTypeId, null)
-            );
-        }
-        return ResponseEntity.ok(new ApiResponse<>("success", "Leave balance fetched successfully", balance));
+        ApiResponse<Map<String, Object>> response = new ApiResponse<>(
+                "success",
+                "Leave balance fetched successfully",
+                data
+        );
+
+        return ResponseEntity.ok(response);
     }
+
+
 
 
 }

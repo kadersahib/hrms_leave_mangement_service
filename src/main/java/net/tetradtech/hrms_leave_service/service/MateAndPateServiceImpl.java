@@ -3,18 +3,18 @@ package net.tetradtech.hrms_leave_service.service;
 import net.tetradtech.hrms_leave_service.constants.DayOffType;
 import net.tetradtech.hrms_leave_service.constants.LeaveStatus;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
-import net.tetradtech.hrms_leave_service.constants.LeaveTypeConstants;
 import net.tetradtech.hrms_leave_service.dto.UserDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
+import net.tetradtech.hrms_leave_service.util.LeaveTypeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class MateAndPateServiceImpl implements MateAndPateService {
@@ -35,12 +35,12 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         String leaveTypeName;
 
         if (leaveTypeId == 3L) {
-            leaveTypeName = LeaveTypeConstants.MATERNITY;
+            leaveTypeName = LeaveTypeUtil.MATERNITY;
             if (!"FEMALE".equalsIgnoreCase(user.getGender())) {
                 throw new IllegalArgumentException("Maternity leave only applicable to female users.");
             }
         } else if (leaveTypeId == 4L) {
-            leaveTypeName = LeaveTypeConstants.PATERNITY;
+            leaveTypeName = LeaveTypeUtil.PATERNITY;
             if (!"MALE".equalsIgnoreCase(user.getGender())) {
                 throw new IllegalArgumentException("Paternity leave only applicable to male users.");
             }
@@ -59,12 +59,12 @@ public class MateAndPateServiceImpl implements MateAndPateService {
             throw new IllegalArgumentException(leaveTypeName + " leave already applied for year " + leaveYear);
         }
 
-        int leaveDays = calculateWorkingDays(startDate, endDate);
+        int leaveDays = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
 
-        if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
-            throw new IllegalArgumentException("Maternity leave cannot exceed 100 days.");
+        if (leaveTypeId == 3L && leaveDays > LeaveTypeUtil.MAX_MATERNITY_DAYS) {
+            throw new IllegalArgumentException("Maternity leave cannot exceed 120 days.");
         }
-        if (leaveTypeId == 4L && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
+        if (leaveTypeId == 4L && leaveDays > LeaveTypeUtil.MAX_PATERNITY_DAYS) {
             throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
         }
         if (file == null || file.isEmpty()) {
@@ -89,7 +89,6 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         leave.setStartDate(startDate);
         leave.setEndDate(endDate);
         leave.setAppliedDays( leaveDays);
-        leave.setTotalLeaveDays(leaveDays);
         leave.setStatus(LeaveStatus.PENDING);
         leave.setDocumentName(documentName);
         leave.setDocumentData(documentData);
@@ -112,16 +111,21 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         LeaveApplication existing = leaveRepository.findById(leaveId)
                 .orElseThrow(() -> new RuntimeException("Leave not found with ID: " + leaveId));
 
+        if (!existing.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("User ID does not match the leave.");
+        }
+
+
         if (!LeaveStatus.PENDING.equals(existing.getStatus())) {
             throw new IllegalArgumentException("Only PENDING leaves can be updated.");
         }
 
-        int leaveDays = calculateWorkingDays(startDate, endDate);
+        int leaveDays = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
 
-        if (leaveTypeId == 3L && leaveDays > LeaveTypeConstants.MAX_MATERNITY_DAYS) {
-            throw new IllegalArgumentException("Maternity leave cannot exceed 100 days.");
+        if (leaveTypeId == 3L && leaveDays > LeaveTypeUtil.MAX_MATERNITY_DAYS) {
+            throw new IllegalArgumentException("Maternity leave cannot exceed 120 days.");
         }
-        if (leaveTypeId == 4L && leaveDays > LeaveTypeConstants.MAX_PATERNITY_DAYS) {
+        if ((leaveTypeId == 4L) && (leaveDays > LeaveTypeUtil.MAX_PATERNITY_DAYS)) {
             throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
         }
 
@@ -139,7 +143,6 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         existing.setStartDate(startDate);
         existing.setEndDate(endDate);
         existing.setAppliedDays(leaveDays);
-        existing.setTotalLeaveDays(leaveDays);
         existing.setReportingId(reportingId);
         existing.setDayOffType(DayOffType.LEAVE);
 
@@ -153,19 +156,6 @@ public class MateAndPateServiceImpl implements MateAndPateService {
 
         existing.setUpdatedAt(LocalDateTime.now());
         return leaveRepository.save(existing);
-    }
-
-    private int calculateWorkingDays(LocalDate start, LocalDate end) {
-        int days = 0;
-        LocalDate date = start;
-        while (!date.isAfter(end)) {
-            DayOfWeek day = date.getDayOfWeek();
-            if (day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY) {
-                days++;
-            }
-            date = date.plusDays(1);
-        }
-        return days;
     }
 
 

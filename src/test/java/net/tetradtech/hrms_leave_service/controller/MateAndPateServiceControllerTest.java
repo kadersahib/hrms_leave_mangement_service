@@ -126,8 +126,6 @@ class MateAndPateServiceControllerTest {
                 .andExpect(jsonPath("$.message").value("No document attached for this leave."));
     }
 
-
-
     @Test
     void testDownloadDocument_NotFound() throws Exception {
         when(leaveApplicationRepository.findById(300L))

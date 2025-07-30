@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeaveApprovalDTO {
-    private String action; // "APPROVED", "REJECTED"
-    private String performedBy;
+    private String action; // "approved" or "rejected"
     private String comment;
+    private Long approveId;
 }
