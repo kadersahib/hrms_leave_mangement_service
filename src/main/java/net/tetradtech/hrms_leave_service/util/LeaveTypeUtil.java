@@ -18,10 +18,13 @@ public class LeaveTypeUtil {
             return MAX_MATERNITY_DAYS;
         } else if (leaveTypeId == 4L) {
             return MAX_PATERNITY_DAYS;
+        } else if (leaveTypeId == 5L) {
+            return 10; // Example: Max 10 days for "Others"
         } else {
             throw new IllegalArgumentException("Unsupported leave type ID: " + leaveTypeId);
         }
     }
+
 
     public static String getLeaveTypeName(Long leaveTypeId) {
         if (leaveTypeId == 1L) {
@@ -32,10 +35,13 @@ public class LeaveTypeUtil {
             return "Maternity";
         } else if (leaveTypeId == 4L) {
             return "Paternity";
+        } else if (leaveTypeId == 5L) {
+            return "Others";
         } else {
             return "Unknown";
         }
     }
+
 
     public static boolean isSupported(Long leaveTypeId) {
         return leaveTypeId != 3L && leaveTypeId != 3L;

@@ -2,7 +2,7 @@ package net.tetradtech.hrms_leave_service.controller;
 
 import jakarta.validation.Valid;
 import net.tetradtech.hrms_leave_service.constants.DayOffType;
-import net.tetradtech.hrms_leave_service.dto.LeaveDocDTO;
+import net.tetradtech.hrms_leave_service.dto.LeaveMatAndPatDTO;
 import net.tetradtech.hrms_leave_service.model.LeaveApplication;
 import net.tetradtech.hrms_leave_service.repository.LeaveApplicationRepository;
 import net.tetradtech.hrms_leave_service.response.ApiResponse;
@@ -28,7 +28,7 @@ public class MateAndPateServiceController {
 
 
     @PostMapping("/apply")
-    public ResponseEntity<ApiResponse<LeaveDocDTO>> applyLeave(
+    public ResponseEntity<ApiResponse<LeaveMatAndPatDTO>> applyLeave(
             @Valid
             @RequestParam Long userId,
             @RequestParam Long leaveTypeId,
@@ -41,7 +41,7 @@ public class MateAndPateServiceController {
         DayOffType dayOff = DayOffType.fromString(dayOffType);
         LeaveApplication leave = leaveDocumentService.applyLeave(userId, leaveTypeId,dayOff,reportingId, startDate, endDate, file);
 
-        LeaveDocDTO dto = new LeaveDocDTO();
+        LeaveMatAndPatDTO dto = new LeaveMatAndPatDTO();
         dto.setId(leave.getId());
         dto.setUserId(leave.getUserId());
         dto.setLeaveTypeId(leave.getLeaveTypeId());
@@ -54,7 +54,7 @@ public class MateAndPateServiceController {
         return ResponseEntity.ok(new ApiResponse<>("success", "Leave applied successfully", dto));
     }
     @PutMapping("/apply/{leaveId}")
-    public ResponseEntity<ApiResponse<LeaveDocDTO>> updateLeave(
+    public ResponseEntity<ApiResponse<LeaveMatAndPatDTO>> updateLeave(
             @PathVariable Long leaveId,
             @RequestParam Long userId,
             @RequestParam String dayOffType,
@@ -68,7 +68,7 @@ public class MateAndPateServiceController {
 
         LeaveApplication leave = leaveDocumentService.updateLeave(leaveId, userId, leaveTypeId, dayOff, reportingId, startDate, endDate, file);
 
-        LeaveDocDTO dto = new LeaveDocDTO();
+        LeaveMatAndPatDTO dto = new LeaveMatAndPatDTO();
         dto.setId(leave.getId());
         dto.setUserId(leave.getUserId());
         dto.setLeaveTypeId(leave.getLeaveTypeId());

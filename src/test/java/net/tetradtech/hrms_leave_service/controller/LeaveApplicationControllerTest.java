@@ -36,12 +36,14 @@ class LeaveApplicationControllerTest {
     @Test
     void testApplyLeave_Success() throws Exception {
         LeaveRequestDTO request = new LeaveRequestDTO(
-                1L,
-                1L,
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(3),
-                2L,
-                "leave"
+                1L,                        // userId
+                1L,                        // leaveTypeId
+                LocalDate.now().plusDays(1), // startDate
+                LocalDate.now().plusDays(3), // endDate
+                2L,                        // reportingId
+                "Full Day",                // dayOffType
+                "Personal Work",           // reason
+                null                       // leaveOtherReason (optional)
         );
 
         LeaveApplication leave = new LeaveApplication();
@@ -63,11 +65,12 @@ class LeaveApplicationControllerTest {
     void testUpdateLeave_Success() throws Exception {
         LeaveUpdateRequestDTO updateRequest = new LeaveUpdateRequestDTO();
         updateRequest.setUserId(1L);
-        updateRequest.setLeaveId(1L);
+        updateRequest.setLeaveTypeId(1L);
         updateRequest.setStartDate(LocalDate.now().plusDays(1));
         updateRequest.setEndDate(LocalDate.now().plusDays(3));
         updateRequest.setReportingId(2L);
         updateRequest.setDayOffType("leave");
+        updateRequest.setReason("Medical Emergency");
 
         LeaveApplication updatedLeave = new LeaveApplication();
         updatedLeave.setId(200L);
@@ -101,13 +104,14 @@ class LeaveApplicationControllerTest {
         LeaveApplication leave = new LeaveApplication();
         leave.setId(400L);
 
-        Mockito.when(leaveApplicationService.getLeavesById(1L)).thenReturn(List.of(leave));
+        Mockito.when(leaveApplicationService.getLeaveById(1L)).thenReturn(leave);
 
         mockMvc.perform(get("/api/leaves/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data[0].id").value(400L));
+                .andExpect(jsonPath("$.data.id").value(400L));
     }
+
 
     @Test
     void testDeleteLeave() throws Exception {

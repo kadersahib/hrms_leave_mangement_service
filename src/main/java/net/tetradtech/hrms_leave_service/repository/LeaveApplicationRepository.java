@@ -37,24 +37,29 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
 
     @Query("SELECT COUNT(l) FROM LeaveApplication l " +
-            "WHERE l.userId = :userId AND l.isDeleted = false AND l.id <> :leaveId " +
-            "AND l.startDate <= :endDate AND l.endDate >= :startDate")
+            "WHERE l.userId = :userId " +
+            "AND l.status NOT IN ('CANCELLED', 'REJECTED') " +
+            "AND l.startDate <= :endDate " +
+            "AND l.endDate >= :startDate " +
+            "AND l.id <> :excludeId")
     int countOverlappingLeavesForUpdate(@Param("userId") Long userId,
-                                        @Param("leaveId") Long leaveId,
+                                        @Param("excludeId") Long excludeId,
                                         @Param("startDate") LocalDate startDate,
                                         @Param("endDate") LocalDate endDate);
 
 
+
     @Query("SELECT COALESCE(SUM(l.appliedDays), 0) FROM LeaveApplication l " +
-            "WHERE l.userId = :userId AND l.leaveTypeId = :leaveTypeId AND l.isDeleted = false " +
+            "WHERE l.userId = :userId AND l.leaveTypeId = :leaveTypeId " +
+            "AND l.status IN ('PENDING', 'APPROVED') " +
             "AND YEAR(l.startDate) = :year")
     int getTotalUsedDaysForYear(@Param("userId") Long userId,
                                 @Param("leaveTypeId") Long leaveTypeId,
                                 @Param("year") int year);
 
-
     @Query("SELECT COALESCE(SUM(l.appliedDays), 0) FROM LeaveApplication l " +
-            "WHERE l.userId = :userId AND l.leaveTypeId = :leaveTypeId AND l.isDeleted = false " +
+            "WHERE l.userId = :userId AND l.leaveTypeId = :leaveTypeId " +
+            "AND l.status IN ('PENDING', 'APPROVED') " +
             "AND YEAR(l.startDate) = :year AND l.id <> :excludeId")
     int getTotalUsedDaysForYearExcludingId(@Param("userId") Long userId,
                                            @Param("leaveTypeId") Long leaveTypeId,

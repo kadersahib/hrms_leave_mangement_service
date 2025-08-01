@@ -17,7 +17,7 @@ public class LeaveUpdateRequestDTO {
     private Long userId;
 
     @NotNull(message = "leaveId is required")
-    private Long leaveId;
+    private Long leaveTypeId;
 
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
@@ -29,4 +29,9 @@ public class LeaveUpdateRequestDTO {
 
     @NotNull(message = "Leave day type is required")
     private String DayOffType;
+
+    @NotNull(message = "Reason is Required ")
+    private String reason;
+
+    private String leaveOtherReason;
 }

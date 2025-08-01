@@ -14,7 +14,7 @@ public interface LeaveApplicationService {
 
     List<LeaveApplication> getAllLeaves();
 
-    List<LeaveApplication> getLeavesById(Long Id);
+    LeaveApplication getLeaveById(Long Id);
 
     void deleteById(Long Id);
 

@@ -49,21 +49,22 @@ public class LeaveApplicationController {
         }
     }
 
-
-
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<LeaveApplication>>> getAll() {
         List<LeaveApplication> leaves = leaveApplicationService.getAllLeaves();
         return ResponseEntity.ok(new ApiResponse<>("success", "All leaves fetched", leaves));
     }
 
+
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<List<LeaveApplication>>> getLeaveById(@PathVariable Long id) {
-        List<LeaveApplication> leaves = leaveApplicationService.getLeavesById(id);
-        if (leaves.isEmpty()) {
-            return ResponseEntity.status(404).body(new ApiResponse<>("error", "No UserId  found", null));
+    public ResponseEntity<ApiResponse<LeaveApplication>> getLeaveById(@PathVariable Long id) {
+        try {
+            LeaveApplication leave = leaveApplicationService.getLeaveById(id);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Leave fetched", leave));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404)
+                    .body(new ApiResponse<>("error", e.getMessage(), null));
         }
-        return ResponseEntity.ok(new ApiResponse<>("success", "Leaves fetched", leaves));
     }
 
     @DeleteMapping("/{id}")

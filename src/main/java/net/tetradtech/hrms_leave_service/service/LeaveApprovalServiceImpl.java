@@ -9,15 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-
+import java.util.List;
 
 
 @Service
-public class LeaveApprovalServiceImpl implements LeaveApprovalService{
+public class LeaveApprovalServiceImpl implements LeaveApprovalService {
 
     @Autowired
     private LeaveApplicationRepository leaveApplicationRepository;
-
 
 
     @Override
@@ -25,11 +24,11 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
         LeaveApplication leave = leaveApplicationRepository.findById(leaveId)
                 .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + leaveId));
 
-        if (request.getApproveId() == null) {
+        if (request.getApproverId() == null) {
             throw new IllegalArgumentException("Approver ID is required.");
         }
 
-        if (!leave.getReportingId().equals(request.getApproveId())) {
+        if (!leave.getReportingId().equals(request.getApproverId())) {
             throw new IllegalArgumentException("You are not authorized to approve/reject this leave.");
         }
 
@@ -62,73 +61,80 @@ public class LeaveApprovalServiceImpl implements LeaveApprovalService{
             throw new IllegalArgumentException("Invalid action. Use 'approved' or 'rejected'.");
         }
 
-        //  Save comment and approver ID
-        leave.setComment(request.getComment());
-        leave.setApprovedId(String.valueOf(request.getApproveId())); // or Long if field is Long
+        leave.setApproverComment(request.getApproverComment());
+        leave.setApproverId(request.getApproverId());
         leave.setUpdatedAt(LocalDateTime.now());
-        leave.setUpdatedBy(request.getApproveId());
+        leave.setUpdatedBy(String.valueOf(request.getApproverId()));
 
         return leaveApplicationRepository.save(leave);
     }
 
-//    @Override
-//    public LeaveApplication updateApproval(Long leaveId, LeaveApprovalDTO dto) {
-//        LeaveApplication leave = leaveApplicationRepository.findByIdAndIsDeletedFalse(leaveId)
-//                .orElseThrow(() -> new IllegalArgumentException("Leave not found or already deleted (ID: " + leaveId + ")"));
-//
-//        if (leave.getStatus() == LeaveStatus.CANCELLED || dto.getAction().equalsIgnoreCase("CANCELLED")) {
-//            throw new IllegalStateException("Cannot approve/reject a cancelled leave.");
-//        }
-//
-//        LeaveStatus newStatus = LeaveStatus.valueOf(dto.getAction().toUpperCase());
-////
-////        if (newStatus == LeaveStatus.APPROVED) {
-////            long approvedDays = ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
-////
-////            LeaveTypeDTO leaveType = leaveTypeClient.getLeaveTypeById(leave.getLeaveTypeId());
-////            if (leaveType == null) {
-////                throw new IllegalArgumentException("Leave type not found for ID: " + leave.getLeaveTypeId());
-////            }
-////
-////            int maxAllowed = leaveType.getMaxDays();
-////            int remaining = maxAllowed - (int) approvedDays;
-////
-////            leave.setRemainingDays(remaining);
-////        } else {
-////            leave.setRemainingDays(null);
-////        }
-//
-//        // Update leave application details
-//        leave.setStatus(newStatus);
-//        leave.setApprovalComment(dto.getComment());
-//        leave.setApprovedBy(dto.getPerformedBy());
-//        leave.setApprovalTimestamp(LocalDateTime.now());
-//        leave.setUpdatedAt(LocalDateTime.now());
-//        leave.setUpdatedBy(SYSTEM_USER);
-//
-//        return leaveApplicationRepository.save(leave);
-//    }
-//
-//    @Override
-//    public List<LeaveApplication> getAll() {
-//        return leaveApplicationRepository.findByIsDeletedFalse();
-//    }
-//
-//    @Override
-//    public LeaveApplication getById(Long id) {
-//        return leaveApplicationRepository.findByIdAndIsDeletedFalse(id)
-//                .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + id));
-//    }
-//
-//    @Override
-//    public void deleteById(Long id) {
-//        LeaveApplication leave = leaveApplicationRepository.findById(id)
-//                .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + id));
-//        leave.setDeleted(true);
-//        leave.setDeletedAt(LocalDateTime.now());
-//        leave.setDeletedBy(SYSTEM_USER);
-//        leaveApplicationRepository.save(leave);
-//    }
 
+    @Override
+    public LeaveApplication changeLeaveStatus(Long leaveId, Long approverId, String comment) {
+        LeaveApplication leave = leaveApplicationRepository.findById(leaveId)
+                .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + leaveId));
+
+        if (approverId == null) {
+            throw new IllegalArgumentException("Approver ID is required.");
+        }
+
+        if (!leave.getReportingId().equals(approverId)) {
+            throw new IllegalArgumentException("You are not authorized to toggle this leave.");
+        }
+
+        if (leave.isDeleted()) {
+            throw new IllegalArgumentException("Cannot toggle a deleted leave.");
+        }
+
+        int maxDays = LeaveTypeUtil.getMaxDays(leave.getLeaveTypeId());
+        int currentYear = leave.getStartDate().getYear();
+
+        if (leave.getStatus() == LeaveStatus.APPROVED) {
+            leave.setStatus(LeaveStatus.REJECTED);
+            int usedDays = leaveApplicationRepository.getTotalUsedDaysForYear(
+                    leave.getUserId(), leave.getLeaveTypeId(), currentYear) - leave.getAppliedDays();
+            leave.setRemainingDays(maxDays - usedDays);
+
+        } else if (leave.getStatus() == LeaveStatus.REJECTED) {
+            leave.setStatus(LeaveStatus.APPROVED);
+            int usedDays = leaveApplicationRepository.getTotalUsedDaysForYear(
+                    leave.getUserId(), leave.getLeaveTypeId(), currentYear);
+            leave.setRemainingDays(maxDays - usedDays);
+
+        } else {
+            throw new IllegalStateException("Only APPROVED or REJECTED leaves can be toggled.");
+        }
+
+        leave.setApproverComment(comment);
+        leave.setApproverId(approverId);
+        leave.setUpdatedAt(LocalDateTime.now());
+        leave.setUpdatedBy(String.valueOf(approverId));
+
+        return leaveApplicationRepository.save(leave);
+    }
+
+    @Override
+    public List<LeaveApplication> getAllApprovals() {
+        return leaveApplicationRepository.findByIsDeletedFalse();
+    }
+
+    @Override
+    public List<LeaveApplication> getByUserId(Long userId) {
+        return leaveApplicationRepository.findByUserIdAndIsDeletedFalse(userId);
+    }
+
+
+    @Override
+    public void deleteApprovalById(Long id) {
+        LeaveApplication leave = leaveApplicationRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + id));
+
+        leave.setDeleted(true);
+        leave.setDeletedAt(LocalDateTime.now());
+        leave.setDeletedBy(String.valueOf(leave.getApproverId()));
+        leave.setUpdatedAt(LocalDateTime.now());
+        leaveApplicationRepository.save(leave);
+    }
 
 }

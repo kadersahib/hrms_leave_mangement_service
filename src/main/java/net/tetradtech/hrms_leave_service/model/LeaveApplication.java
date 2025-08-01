@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 
 @Table(name = "leave_applications")
 public class LeaveApplication {
@@ -28,7 +27,7 @@ public class LeaveApplication {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "leaveid")
+    @Column(name = "leaveTypeid")
     private Long leaveTypeId;
 
     @Column(name = "reportingTo")
@@ -53,6 +52,12 @@ public class LeaveApplication {
     @Column(name = "dayoff")
     private DayOffType dayOffType;
 
+    @Column(name = "reason")
+    private String reason;
+
+    @Column(name = "otherReason")
+    private String leaveOtherReason;
+
 
     @Column(name = "remaining_days")
     private Integer remainingDays;
@@ -68,31 +73,11 @@ public class LeaveApplication {
     private byte[] documentData;
 
 
+    @Column(name = "approverComments")
+    private String approverComment;
 
-    @Column(name = "comment")
-    private String comment;
-
-    @Column(name = "approveId")
-    private String approvedId;
-
-
-
-
-//    @Column(name = "total_applied")
-//    private Integer totalApplied;
-//
-//    @Column(name = "approved_count")
-//    private Integer approvedCount;
-//
-//    @Column(name = "rejected_count")
-//    private Integer rejectedCount;
-//
-//    @Column(name = "pending_count")
-//    private Integer pendingCount;
-//
-//    @Column(name = "cancelled_count")
-//    private Integer cancelledCount;
-
+    @Column(name = "approverId")
+    private Long approverId;
 
 
     // Audit fields
@@ -106,7 +91,7 @@ public class LeaveApplication {
     private LocalDateTime updatedAt;
 
     @Column(name = "updatedBy")
-    private Long updatedBy;
+    private String updatedBy;
 
     // Soft delete fields
     @Column(name = "isDeleted")

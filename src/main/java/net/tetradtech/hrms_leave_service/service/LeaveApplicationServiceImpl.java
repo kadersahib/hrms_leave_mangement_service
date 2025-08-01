@@ -1,6 +1,5 @@
 package net.tetradtech.hrms_leave_service.service;
 
-import net.tetradtech.hrms_leave_service.constants.DayOffType;
 import net.tetradtech.hrms_leave_service.client.UserServiceClient;
 import net.tetradtech.hrms_leave_service.dto.*;
 import net.tetradtech.hrms_leave_service.mapper.LeaveApplicationMapper;
@@ -59,11 +58,11 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
         long requestedDays = ChronoUnit.DAYS.between(application.getStartDate(), application.getEndDate()) + 1;
 
-        int maxDays = LeaveTypeUtil.getMaxDays(application.getLeaveId());
+        int maxDays = LeaveTypeUtil.getMaxDays(application.getLeaveTypeId());
 
         int year = application.getStartDate().getYear();
         int usedDays = leaveApplicationRepository.getTotalUsedDaysForYear(
-                application.getUserId(), application.getLeaveId(), year);
+                application.getUserId(), application.getLeaveTypeId(), year);
 
         int remainingDays = maxDays - (usedDays + (int) requestedDays);
 
@@ -73,8 +72,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         }
 
         LeaveApplication newLeave = leaveApplicationMapper
-                .toNewLeaveApplication(application, (int) requestedDays, remainingDays);
-
+                .toNewLeaveApplication(application, remainingDays);
 
         return leaveApplicationRepository.save(newLeave);
     }
@@ -114,11 +112,11 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
         long requestedDays = ChronoUnit.DAYS.between(updatedData.getStartDate(), updatedData.getEndDate()) + 1;
 
-        int maxDays = LeaveTypeUtil.getMaxDays(updatedData.getLeaveId());
+        int maxDays = LeaveTypeUtil.getMaxDays(updatedData.getLeaveTypeId());
 
         int year = updatedData.getStartDate().getYear();
         int usedDays = leaveApplicationRepository.getTotalUsedDaysForYearExcludingId(
-                updatedData.getUserId(), updatedData.getLeaveId(), year, id);
+                updatedData.getUserId(), updatedData.getLeaveTypeId(), year, id);
 
         int remainingDays = maxDays - (usedDays + (int) requestedDays);
 
@@ -127,23 +125,15 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
                     " days remaining for this leave type in " + year + ".");
         }
 
-        existingLeave.setLeaveTypeId(updatedData.getLeaveId());
-        existingLeave.setStartDate(updatedData.getStartDate());
-        existingLeave.setEndDate(updatedData.getEndDate());
-        existingLeave.setReportingId(updatedData.getReportingId());
-        existingLeave.setDayOffType(DayOffType.valueOf(updatedData.getDayOffType().toUpperCase()));
-        existingLeave.setUpdatedAt(LocalDateTime.now());
-        existingLeave.setUpdatedBy(String.valueOf(updatedData.getUserId()));
-        existingLeave.setAppliedDays((int) requestedDays);
-        existingLeave.setRemainingDays(remainingDays);
+        existingLeave = leaveApplicationMapper.updateLeaveFromDto(existingLeave, updatedData, (int) requestedDays, remainingDays);
 
         return leaveApplicationRepository.save(existingLeave);
     }
 
-
     @Override
-    public List<LeaveApplication> getLeavesById(Long Id) {
-        return leaveApplicationRepository.findByUserIdAndIsDeletedFalse(Id);
+    public LeaveApplication getLeaveById(Long id) {
+        return leaveApplicationRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new IllegalArgumentException("Leave application not found with ID: " + id));
     }
 
     @Override
@@ -164,25 +154,15 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leaveApplicationRepository.save(latest);
     }
 
-    @Override
     public LeaveApplication cancelLeave(Long id) {
         LeaveApplication leave = leaveApplicationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Leave not found or already deleted (ID: " + id + ")"));
-
-        if (leave.isDeleted()) {
-            throw new IllegalArgumentException("Cannot cancel a leave that is already deleted (ID: " + id + ")");
-        }
-
-        if (!leave.getId().equals(id)) {
-            throw new IllegalArgumentException("Leave does not belong to this ID: " + id);
-        }
+                .orElseThrow(() -> new IllegalArgumentException("Leave not found (ID: " + id + ")"));
 
         if (leave.getStatus() != LeaveStatus.PENDING) {
             throw new IllegalStateException("Only PENDING leaves can be cancelled.");
         }
 
         leave.setStatus(LeaveStatus.CANCELLED);
-        leave.setDeleted(true);
         leave.setUpdatedAt(LocalDateTime.now());
         leave.setUpdatedBy(String.valueOf(leave.getUserId()));
 

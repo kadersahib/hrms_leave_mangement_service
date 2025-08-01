@@ -26,37 +26,28 @@ public class MateAndPateServiceImpl implements MateAndPateService {
     private UserServiceClient userServiceClient;
 
     @Override
-    public LeaveApplication applyLeave(Long userId, Long leaveTypeId,DayOffType dayOffType,Long reportingId, LocalDate startDate, LocalDate endDate, MultipartFile file) {
+    public LeaveApplication applyLeave(Long userId, Long leaveTypeId, DayOffType dayOffType,
+                                       Long reportingId, LocalDate startDate, LocalDate endDate,
+                                       MultipartFile file) {
+
         UserDTO user = userServiceClient.getUserById(userId);
         if (user == null) {
             throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
         }
 
-        String leaveTypeName;
-
+        String reason;
         if (leaveTypeId == 3L) {
-            leaveTypeName = LeaveTypeUtil.MATERNITY;
+            reason = "Maternity leave";
             if (!"FEMALE".equalsIgnoreCase(user.getGender())) {
                 throw new IllegalArgumentException("Maternity leave only applicable to female users.");
             }
         } else if (leaveTypeId == 4L) {
-            leaveTypeName = LeaveTypeUtil.PATERNITY;
+            reason = "Paternity leave";
             if (!"MALE".equalsIgnoreCase(user.getGender())) {
                 throw new IllegalArgumentException("Paternity leave only applicable to male users.");
             }
         } else {
             throw new IllegalArgumentException("Invalid leaveTypeId: " + leaveTypeId);
-        }
-
-        int leaveYear = startDate.getYear();
-        boolean alreadyApplied = leaveRepository.existsByUserIdAndLeaveTypeIdAndStartDateBetween(
-                userId, leaveTypeId,
-                LocalDate.of(leaveYear, 1, 1),
-                LocalDate.of(leaveYear, 12, 31)
-        );
-
-        if (alreadyApplied) {
-            throw new IllegalArgumentException(leaveTypeName + " leave already applied for year " + leaveYear);
         }
 
         int leaveDays = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
@@ -67,11 +58,11 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         if (leaveTypeId == 4L && leaveDays > LeaveTypeUtil.MAX_PATERNITY_DAYS) {
             throw new IllegalArgumentException("Paternity leave cannot exceed 20 days.");
         }
+
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Document is required for applying " + leaveTypeId + " leave.");
         }
 
-        // Save document
         String documentName;
         byte[] documentData;
         try {
@@ -88,17 +79,17 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         leave.setDayOffType(DayOffType.LEAVE);
         leave.setStartDate(startDate);
         leave.setEndDate(endDate);
-        leave.setAppliedDays( leaveDays);
+        leave.setAppliedDays(leaveDays);
         leave.setStatus(LeaveStatus.PENDING);
+
+        leave.setReason(reason);
+
         leave.setDocumentName(documentName);
         leave.setDocumentData(documentData);
         leave.setCreatedAt(LocalDateTime.now());
-
-        String userIdString = String.valueOf(leave.getUserId());
-        leave.setCreatedBy(userIdString);
+        leave.setCreatedBy(String.valueOf(userId));
 
         LeaveApplication saved = leaveRepository.save(leave);
-
         saved.setDocumentPath("/api/leaveDocument/download/" + saved.getId());
         return leaveRepository.save(saved);
     }
@@ -138,6 +129,14 @@ public class MateAndPateServiceImpl implements MateAndPateService {
             throw new IllegalArgumentException("Document is required when updating leave.");
         }
 
+        String reason;
+        if (leaveTypeId == 3L) {
+            reason = "Maternity leave";
+        } else if (leaveTypeId == 4L) {
+            reason = "Paternity leave";
+        } else {
+            throw new IllegalArgumentException("Invalid leaveTypeId for update: " + leaveTypeId);
+        }
         existing.setUserId(userId);
         existing.setLeaveTypeId(leaveTypeId);
         existing.setStartDate(startDate);
@@ -145,6 +144,8 @@ public class MateAndPateServiceImpl implements MateAndPateService {
         existing.setAppliedDays(leaveDays);
         existing.setReportingId(reportingId);
         existing.setDayOffType(DayOffType.LEAVE);
+
+        existing.setReason(reason);
 
         existing.setDocumentName(file.getOriginalFilename());
         try {
